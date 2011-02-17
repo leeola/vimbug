@@ -1,3 +1,6 @@
 *.vim.sess
 *.pyc
 *.swp
+
+build/*
+vim_debug.egg-info/*

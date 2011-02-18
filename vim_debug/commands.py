@@ -62,7 +62,7 @@ def start(url = None):
     if debugger and debugger.started:
         return
     if url is not None:
-        if url in ('.', '-'):
+        if url in ('.', '-') or url.startswith('py:') :
             pass
         elif url.isdigit():
             urls = load_urls()
@@ -88,6 +88,12 @@ def start(url = None):
                 debugger.start_py(fname)
             elif url == '-':
                 debugger.start()
+            elif url.startswith('py:'):
+                fname = url[3:]
+                if not (os.path.exists(fname) and fname.endswith('.py')):
+                    print 'Current file is not python (or doesn\'t exist on your hard drive)'
+                    return
+                debugger.start_py(fname)
             else:
                 debugger.start_url(url)
             return
@@ -99,6 +105,7 @@ def start(url = None):
     print '''\
 usage: dbg - (no auto start)
        dbg . (autostart current file -- python)
+       dbg py:path/to/file.py (autostart the specified file)
        dbg url (autostart a URL -- PHP)
        dbg num (autostart a past url -- PHP)'''
 

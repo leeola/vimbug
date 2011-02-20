@@ -57,7 +57,36 @@ def cmd(name, help='', plain=False):
 
 debugger = None
 
-def start(url = None):
+def start(*args):
+    global debugger
+    if debugger and debugger.started:
+        return
+    
+    # Get the type we're going to be working with.
+    if len(args) >= 1:
+        supported_types = {
+                'py':'python',
+                'php':'php',
+                }
+        try:
+            debug_type = supported_types[args[0]]
+        except KeyError:
+            debug_type = None
+
+    # Get the main option
+    if len(args) >= 2:
+        option = args[1]
+    else:
+        option = None
+
+    # Get the option arguments
+    if len(args) >= 2:
+        option_arguments = args[1:]
+    else:
+        option_arguments = []
+
+
+def start_deprecated(url = None):
     global debugger
     if debugger and debugger.started:
         return

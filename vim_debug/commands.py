@@ -72,6 +72,8 @@ def start(*args):
             debug_type = supported_types[args[0]]
         except KeyError:
             debug_type = None
+    else:
+        debug_type = None
 
     # Get the main option
     if len(args) >= 2:
@@ -85,6 +87,21 @@ def start(*args):
     else:
         option_arguments = []
 
+    type_switch = {
+            None:start_repeat,
+            'python':start_python,
+            'php':start_php,
+            }
+    type_switch[debug_type](option, option_arguments)
+
+def start_repeat(option, option_arugments):
+    print 'Not implemented.'
+
+def start_python(option, option_arugments):
+    print 'Not implemented.'
+
+def start_php(option, option_arugments):
+    print 'Not implemented.'
 
 def start_deprecated(url = None):
     global debugger

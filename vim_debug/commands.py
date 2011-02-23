@@ -82,8 +82,8 @@ def start(*args):
         option = None
 
     # Get the option arguments
-    if len(args) >= 2:
-        option_arguments = args[1:]
+    if len(args) >= 3:
+        option_arguments = args[2:]
     else:
         option_arguments = []
 
@@ -97,9 +97,67 @@ def start(*args):
 def start_repeat(option, option_arugments):
     print 'Not implemented.'
 
-def start_python(option, option_arugments):
-    print 'Not implemented.'
+def start_python(option, option_arguments):
+    global debugger
+    if debugger and debugger.started:
+        return
+       
+    def is_python_file(file_name):
+        if not os.path.exists(file_name):
+            return False 
+        
+        # If the file is not a python file
+        if file_name.endswith('.py'):
+            return True
+        else:
+            # Check the first line to see if it contains a python executable
+            first_line = open(file_name, 'r').readline()
+            if first_line.startswith('#!') and first_line.endswith('python'):
+                return True
 
+            # This is not a python file, return false
+            return False
+    
+    def file_does_not_exist_warning():
+        print 'Error: The file provided does not exist or is not a python file.'
+    
+    # Set the option to file, and the arguments to the current file.
+    if option == '.':
+        option = 'file'
+        option_arguments = [vim.current.buffer.name]
+ 
+    # If the option is project, we want to find and run the main debug
+    # file for this project, if there is one.
+    if option == 'project':
+        print 'Not implemented..'
+        return
+
+    if option == 'file': 
+        if len(option_arguments) == 0:
+            print '''Invalid usage.
+            Correct usage: Dbg py file /some/dir/file.py'''
+            return
+        
+        # Get the absolute path for this file
+        file_name = os.path.expanduser(option_arguments[0])
+        buffer_directory = os.path.dirname(vim.current.buffer.name)
+        rel_file = os.path.relpath(file_name, buffer_directory)
+        
+        if not is_python_file(rel_file):
+            file_does_not_exist_warning()
+            return
+
+        debugger = Debugger()
+
+        # Black magic from the original script. This needs to be documented..
+        # Well.. first it needs to be figured out dammit.
+        debugger.init_vim()
+        global _commands
+        _commands = debugger.commands()
+
+        # Start the debug server.
+        debugger.start_py(rel_file)
+        
 def start_php(option, option_arugments):
     print 'Not implemented.'
 

@@ -61,7 +61,7 @@ def start(*args):
     global debugger
     if debugger and debugger.started:
         return
-    
+
     # Get the type we're going to be working with.
     if len(args) >= 1:
         supported_types = {
@@ -135,7 +135,7 @@ def start_python(option, option_arguments):
     if option == 'file': 
         if len(option_arguments) == 0:
             print '''Invalid usage.
-            Correct usage: Dbg py file /some/dir/file.py'''
+            Correct usage: Dbg py file /some/dir/file.py args'''
             return
         
         # Get the absolute path for this file
@@ -156,7 +156,7 @@ def start_python(option, option_arguments):
         _commands = debugger.commands()
 
         # Start the debug server.
-        debugger.start_py(rel_file)
+        debugger.start_py(rel_file, option_arguments[1:])
         
 def start_php(option, option_arugments):
     print 'Not implemented.'

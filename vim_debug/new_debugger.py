@@ -112,8 +112,8 @@ class Debugger:
                 return
         return self.start()
 
-    def start_py(self, fname):
-        subprocess.Popen(('pydbgp.py', '-d', 'localhost:9000', fname), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    def start_py(self, fname, args):
+        subprocess.Popen(('pydbgp.py', '-d', 'localhost:9000', fname) + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self._type = 'python'
         return self.start()
 

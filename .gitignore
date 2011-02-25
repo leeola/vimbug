@@ -3,4 +3,5 @@
 *.swp
 
 build/*
+dist/*
 vim_debug.egg-info/*

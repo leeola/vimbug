@@ -27,14 +27,15 @@ def parse_started_args(args):
                 'Options:\n'
                 '   quit    (\\q)   Quit vim-debug.\n'
                 '   run     (\\r)   Run the debugger.\n'))
+    return parser.parse_args(args)
 
 def parse_stopped_args(args):
     ''' Parse the args that Dbg will accept when it is stopped.'''
     
     # Create a parser.
     parser = ArgumentParser(description='Start a vim-debug session.')
-    main_group = parser.add_mutually_exclusive_group()
-    config_group = parser.add_mutually_exclusive_group()
+    main_group = parser.add_argument_group()
+    config_group = parser.add_argument_roup('Config managment options')
 
     # Add arguments.
     main_group.add_argument('-s', '--server', dest='server',
@@ -63,5 +64,6 @@ def parse_stopped_args(args):
     config_group.add_argument('--replace_config', dest='replace_config',
             action='store_true',
             help='Replace an existing config file.')
+    return parser.parse_args(args)
 
 

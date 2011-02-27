@@ -26,6 +26,12 @@ class DebugUI:
         self.sessfile = "/tmp/debugger_vim_saved_session." + str(os.getpid())
         self.minibufexpl = minibufexpl
 
+        # Set the buffer file, and the view count, so that
+        # on the first view we can ensure that the user views
+        # the buffer file, even if it is not the file being debugged.
+        self.buffer_file = vim.current.buffer.name
+        self.src_view_count = 0
+
     def startup(self):
         """ change mode to debug """
         if self.mode == 1: # is debug mode ?
@@ -164,6 +170,13 @@ class DebugUI:
 
     def set_srcview(self, file, line):
         """ set srcview windows to file:line and replace current sign """
+        
+        # For some reason the first two src refreshes are not what we want
+        # to use. I believe the 2nd is correct.
+        if self.src_view_count == 2:
+            file = self.buffer_file
+        
+        self.src_view_count += 1
 
         if file.startswith('file:'):
             file = file[len('file:'):]

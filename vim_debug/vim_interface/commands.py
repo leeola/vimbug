@@ -1,5 +1,5 @@
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, RawTextHelpFormatter
 
 
 def main(args):
@@ -9,7 +9,24 @@ def main(args):
 
 def parse_started_args(args):
     ''' Parse the args that Dbg will accept after it has been started.'''
-    pass
+    parser = ArugmentedParser(formatter_class=RawTextHelpFormatter)
+    parser.add_argument('option', dest='option', required=True,
+            choices=[
+                'quit',
+                'eval',
+                'watch',
+                'run',
+                'here',
+                'break',
+                'up',
+                'down',
+                'over',
+                'into',
+                'out'],
+            help=('Usage: Dbg <option>\n\n'
+                'Options:\n'
+                '   quit    (\\q)   Quit vim-debug.\n'
+                '   run     (\\r)   Run the debugger.\n'))
 
 def parse_stopped_args(args):
     ''' Parse the args that Dbg will accept when it is stopped.'''

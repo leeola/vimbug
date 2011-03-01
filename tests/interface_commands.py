@@ -1,5 +1,5 @@
 
-from attest import Tests, Attest
+from attest import Tests, Assert
 
 from vim_debug.interface import commands
 

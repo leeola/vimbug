@@ -1,6 +1,7 @@
 
-import tests.collections
+from attest import Tests
+from tests.interface_commands import interface_commands
 
-if __name__ == '__main__':
-        tests.collections.run()
+tests = Tests([
+    interface_commands,])
 

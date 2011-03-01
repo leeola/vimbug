@@ -1,7 +1,6 @@
 
-from attest import Tests
-from tests.interface_commands import interface_commands
+import tests
 
-tests = Tests([
-    interface_commands,])
+if __name__ == '__main__':
+    tests.main()
 

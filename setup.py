@@ -14,7 +14,7 @@ setup(
     long_description=open('README.rst').read(),
     maintainer='Lee Olayvar',
     maintainer_email='leeolayvar@gmail.com',
-    version='0.0.0',
+    version='0.0.1',
     url='http://github.com/leeolayvar/vimbug',
     packages=[
         'vimbug',

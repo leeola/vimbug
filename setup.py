@@ -1,17 +1,25 @@
 #!/usr/bin/env python
+'''
+'''
 
 import setuptools
 from distutils.core import setup
 import os
 
+
 setup(
-    name='vim-debug',
-    maintainer='Jared Forsyth',
-    maintainer_email='jared@jaredforsyth.com',
-    version='1.5',
-    url='http://jaredforsyth.com/projects/vim-debug/',
-    packages=['vim_debug'],
-    description='a plugin for vim that creates an integrated debugging environment',
+    name='vimbug',
+    description=('A plugin for vim that creates an integrated debugging '
+        'environment.'),
+    long_description=open('README.rst').read(),
+    maintainer='Lee Olayvar',
+    maintainer_email='leeolayvar@gmail.com',
+    version='0.0.1',
+    url='http://github.com/leeolayvar/vimbug',
+    packages=[
+        'vimbug',
+        'vim_debug',
+        ],
     scripts=['bin/install-vim-debug.py'],
 )
 

@@ -1,77 +1,38 @@
-.. Maintainer: Jared Forsyth <jared@jaredforsyth.com>
-.. Source: http://github.com/jabapyth/vim-phpdebug
+.. Maintainer: Lee Olayvar <leeolayvar@gmail.com>
+.. Source: http://github.com/leeolayvar/vimbug
 
-This plugin creates an integrated debugging environment in VIM.
+VimBug
+======
 
-Features:
+VimBug is a plugin for vim that creates an integrated debugging environment
+focused on the debugging of Python applications. It is also intended to
+work with any DBGp compliant server, it just hasn't been reliably 
+*-- if at all --*  tested on any servers other than Python.
 
-- integration with xdebug
-- step (into/over/out)
-- live stack view
-- breakpoint set/remove
+It is an attempted rewrite/continuation of where
+`Jared Forsyth <http://jaredforsyth.com>`_ left off with 
+`vim-debug <http://jaredforsyth.com/projects/vim-debug>`_. Once Jared gets
+back and is able to program again, it would be great to merge much of this
+code back into vim-debug where any additional features belong. Until then,
+this project will *attempt* to add new features and improve code.
 
-**New:**
+Thanks for the wonderful work Jared!
 
-- watch expressions!
-- live scope view
+Features
+--------
+ - The rewrite has broken basically everything. Please stand by.
 
-**New things that your average user probably won't appreciate, but anyone
-wanting to hack at it should:**
+Planned
+-------
+ - To obtain feature unity with vim-debug
+ - Remove vim_debug references and straight libraries, so that the
+   two projects can exist side by side.
+ - Rewrite of much of the core, to allow for easier unit testing and
+   a refined/extensible interface.
 
-- It's now in a true python package
-- modularized
-- cleaned up, substantially rewritted for consistency
-
-Planned:
-
-- conditional breakpoints
-
-To start your debug session, use the following variants::
-
-   Usage: Dbg - (no auto start)
-          Dbg . (autostart current file -- python)
-          Dbg url (autostart a URL -- PHP)
-          Dbg num (autostart a past url -- PHP)
-
-For PHP urls, vim-debug keeps track of the last 5 urls you debugged -- so you
-don't have to keep typing them in.
-
-Debugger commands::
-
-   [usage:] dbg command [options]
-   - quit    :: exit the debugger
-   - run     :: continue execution until a breakpoint is reached or the program ends
-            shortcut: \r
-   - stop    :: exit the debugger
-   - over    :: step over next function call
-            shortcut: \o
-   - watch   :: execute watch functions
-            shortcut: \w
-   - up      :: go up the stack
-            shortcut: \u
-   - here    :: continue execution until the cursor (tmp breakpoint)
-            shortcut: \h
-   - down    :: go down the stack
-            shortcut: \d
-   - exit    :: exit the debugger
-   - eval    :: eval some code
-   - break   :: set a breakpoint
-            shortcut: \b
-   - into    :: step into next function call
-            shortcut: \i
-   - out     :: step out of current function call
-            shortcut: \t
-
-Screenshot: `[full size]
-<http://jaredforsyth.com/media/uploads/images/vim_debug.jpeg>`_
-
-.. image:: http://jaredforsyth.com/media/uploads/images/vim_debug.jpeg
-   :width: 450
-
-`xdebug docs <http://www.xdebug.org/docs-dbgp.php>`_
-
-**Credits:**
-
+Credits
+-------
+:Jared Forsyth: `(last actvity 7/22/10) <http://jaredforsyth.com/projects/vim-debug>`_
 :Sam Ghods: `(last activity 6/21/07) <http://www.vim.org/scripts/script.php?script_id=1929>`_
 :Seung Woo Shin: `(last activity 12/7/04) <http://www.vim.org/scripts/script.php?script_id=1152>`_
 

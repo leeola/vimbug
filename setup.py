@@ -30,7 +30,7 @@ setup(
     maintainer='Lee Olayvar',
     maintainer_email='leeolayvar@gmail.com',
     version='0.0.0',
-    url='http://github.com/leeolayvar/vim-debug',
+    url='http://github.com/leeolayvar/vimbug',
     packages=[
         'vimbug',
         'vim_debug',

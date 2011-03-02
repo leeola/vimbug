@@ -4,4 +4,4 @@
 
 build/*
 dist/*
-vim_debug.egg-info/*
+vimbug.egg-info/*

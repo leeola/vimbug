@@ -16,7 +16,7 @@ endif
 python << EOF
 import vim
 try:
-    from vim_debug.interface.commands import main
+    from vimbug.interface.commands import main
     vim.command('let has_debug = 1')
 except ImportError, e:
     vim.command('let has_debug = 0')
@@ -27,7 +27,7 @@ if !has_debug
     finish
 endif
 
-command! -nargs=* Dbg python main('<args>')
+command! -nargs=* Vb python main('<args>')
 
 " Debugger highlighting
 hi DbgCurrent term=reverse ctermfg=White ctermbg=Red gui=reverse

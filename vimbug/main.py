@@ -15,22 +15,33 @@ vimbug_session = None
 def main(args):
     '''The main vim-bug command. Called by the user typing "Vb [options]"
     '''
+    global vimbug_session
+
     if vimbug_session is None:
-        session_settings = command_line.process_args(args, session_started=False)
+        processed_args = command_line.process_args(args, session_started=False)
+
+        # Create a session info instance to pass to the vimbug instance.
+        session_information = SessionInformation(
+            processed_args['server'],
+            processed_args['port'],
+            processed_args['location'],
+        )
+
+        # Create our vimbug instance.
+        vimbug_session = VimBug(session_information)
+        vimbug_session.load_interface()
     else:
-        # Technically we have no idea what vimbug_session is right now
-        # But i'm leaving this loose for possibly flexibility.
-        session_settings = command_line.process_args(args, session_started=True)
+        processed_args = command_line.process_args(args, session_started=True)
+        
+        command = processed_args['command']
+        
+        # This will allow us to have a command that maps to another command.
+        translations = {
+        }
+        if translations.has_key(command):
+            command = translations[command]
 
-    # Create a session info instance to pass to the vimbug instance.
-    session_information = SessionInformation(
-        session_settings['server'],
-        session_settings['port'],
-        session_settings['location'],
-    )
-
-    # Create our vimbug instance, and load the interface.
-    VimBug(session_information).load_interface()
+        getattr(vimbug_session, command)()
 
 class VimBug(object):
     '''The main class for VimBug.'''

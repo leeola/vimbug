@@ -85,5 +85,7 @@ def process_args(args, session_started):
             'location':parsed_args.location,
     }
 
+    return processed_args
+
 
 

@@ -1,23 +1,12 @@
+'''
+'''
+import logging
 
 from argparse import ArgumentParser, RawTextHelpFormatter
 
 
-def main(args):
-    ''' The main vim-debug command. Called by the user typing "Dbg [options]"
-    '''
-    
-    # This will eventually be replaced with the actual debugger object.
-    debugger_conn = None
+logger = logging.getLogger('vimbug')
 
-    if debugger_conn is None or not debugger_conn.started:
-        parsed_args = parse_stopped_args(args)
-    elif debugger_conn.started:
-        parsed_args = parse_started_args(args)
-    else:
-        # The failure is not implemented.. how funny.
-        raise NotImplemented()
-
-    print parsed_args
 
 def parse_started_args(args):
     ''' Parse the args that Dbg will accept after it has been started.'''
@@ -77,5 +66,24 @@ def parse_stopped_args(args):
             action='store_true',
             help='Replace an existing config file.')
     return parser.parse_args(args)
+
+def process_args(args, session_started):
+    ''' Fully process any arguments given. This includes reading/creating the
+    config if it is part of the arguments.
+    '''
+    
+    if session_started:
+        parsed_args = parse_started_args(args)
+    else:
+        parsed_args = parse_stopped_args(args)
+
+    logger.debug('Parsed vimbug arguments: %r' % parsed_args)
+
+    processed_args = {
+            'server':parsed_args.server,
+            'port':parsed_args.port,
+            'location':parsed_args.location,
+    }
+
 
 

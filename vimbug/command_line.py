@@ -82,7 +82,7 @@ def process_args(args, session_started):
     processed_args = {
             'server':parsed_args.server,
             'port':parsed_args.port,
-            'location':parsed_args.location,
+            'location':'a.py',
     }
 
     return processed_args

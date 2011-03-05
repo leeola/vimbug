@@ -5,6 +5,7 @@ import logging
 import command_line
 from debugger import Debugger
 from interface import VimGui as Interface
+from session import SessionInformation
 
 
 logger = logging.getLogger('vimbug')

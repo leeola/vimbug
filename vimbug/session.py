@@ -27,7 +27,7 @@ class SessionInformation(object):
         # Try and figure out the session type.
         self.session_type = self._estimate_session_type()
         
-        if session_type not in self.supported_types:
+        if self.session_type not in self.supported_types:
             raise NotImplemented()
 
     def _estimate_session_type(self):

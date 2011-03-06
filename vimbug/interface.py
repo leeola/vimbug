@@ -30,7 +30,7 @@ class VimGui(Interface):
         # And all our splits from that.
         self.windows['stdstream'] = self.windows['source'].split(
             plane='vertical', new_window_side='right',
-            name='"STDOUT_STDERR"',)
+            name='STDOUT_STDERR',)
         self.windows['scope'] = self.windows['stdstream'].split(
             plane='horizontal', new_window_side='above',
             name='SCOPE',)

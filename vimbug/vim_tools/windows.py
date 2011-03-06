@@ -14,6 +14,13 @@ def get_current_window():
 def create_window(name=None):
     '''Create a new window, and return the window object.'''
 
+    # For now, just create a window by splitting the current window to the
+    # top.
+    vim.command('topleft new %s' % name)
+    # Get the latest, hopefully newest, window.
+    vim_window = vim.windows[len(vim.windows)-1]
+    return Window(vim_window)
+
 class Window(object):
     '''An instance of a Vim window.'''
 
@@ -51,8 +58,10 @@ class Window(object):
 
         # Create the vim window
         vim.command('%s %s new %s' % (
-            vim_plane_options[plane], vim_side_options[new_window_side]))
+            vim_plane_options[plane], vim_side_options[new_window_side],
+            name))
 
-        # Get the highest indexing window.. hopefully this is always the latest window.
-        return Window(vim.windows[-1:])
+        # Get the highest indexing window.. hopefully this is always the
+        # latest window.
+        return Window(vim.windows[len(vim.windows)-1])
     

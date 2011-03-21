@@ -20,10 +20,9 @@ class WindowLayout(object):
 
         if from_window_id is None:
             # Try and get the winid of the current window. Create one if needed.
-            try:
-                window_id = self._get_win_id()
-            except NoWindowIDError:
-                self._create_win_id()
+            window_id = self._get_win_id()
+            if window_id is None:
+                self._assign_win_id()
                 window_id = self._get_win_id()
 
         # With the winid, create a window instance.
@@ -46,8 +45,15 @@ class WindowLayout(object):
         if window_number is None:
             window_number = int(vim.eval('winnr()'))
 
+        # Get the current window number so we can restore it.
+        current_winnr = int(vim.eval('winnr()'))
+
         # Select the window and then write the var.
-        raise NotImplemented()
+        vim.command('exec "normal! \\<C-W>".%s.\'w\'' % window_number)
+        vim.command('let w:id="%s"' % window_id)
+        
+        # Restore the previous window.
+        vim.command('exec "normal! \\<C-W>".%s.\'w\'' % current_winnr)
 
     def _find_unique_id(self):
         '''Check every single window var to find a winvar that does not
@@ -75,6 +81,22 @@ class WindowLayout(object):
         # So increase it by one, and everyone's happy!
         return largest_winid + 1
 
+    def _get_win_id(self, window_number=None):
+        '''Get the id of the current window. An exception is raised of the
+        window does not have an id.
+
+        :param window_number:
+            The number of the window you want to check. If None, the current
+            window is used.
+
+        :returns:
+            The window id for the given window number. If no id exists None
+            is returned.
+        '''
+        if window_number is None:
+            window_number = int(vim.eval('winnr()'))
+        return vim.eval('getwinvar(%s, "id")' % window_number)
+
     def _win_id_exists(self, window_id):
         '''Check if a window id exists. Note that this is an expensive
         operation as it searches through *all* of the windows on
@@ -89,6 +111,9 @@ class WindowLayout(object):
 
     def create_window(window_id, name=None):
         '''Create a new window, and return the window object.'''
+
+        # Just putting a hold on this function for now.
+        raise NotImplemented()
 
         # Check if that id already exists. If it does, fail it.
         if self._win_id_exists(window_id):
@@ -117,14 +142,6 @@ class SplitLayout(WindowLayout):
         # Create a window object for the current window.
         current_winnr = vim.eval('winnr()')
         self._window_list[current_winnr-1] = Window(self) 
-
-class Tab(object):
-    '''An instance of a Vim tab.'''
-
-    def __init__(self, tab_id, *args, **kwargs):
-        super(Tab, self).__init__(*args, **kwargs)
-        
-        self.tab_id = tab_id
 
 class Window(object):
     '''An instance of a Vim window.'''

@@ -9,61 +9,105 @@ import vim
 logger = logging.getLogger('vimbug')
 
 
-def get_current_window():
-    return Window(vim.current.window)
+class Window(object):
+    '''An instance of a Vim window.'''
 
-class WindowLayout(object):
-    '''A layout manager for Vim..'''
 
-    def __init__(self, from_window_id=None, *args, **kwargs):
-        super(WindowLayout, self).__init__(*args, **kwargs)
-
-        if from_window_id is None:
-            # Try and get the winid of the current window. Create one if needed.
-            window_id = self._get_win_id()
-            if window_id is None:
-                self._assign_win_id()
-                window_id = self._get_win_id()
-
-        # With the winid, create a window instance.
-        self.add_window(Window(id=window_id))
-
-    def _assign_win_id(self, window_number=None, window_id=None)
-        '''Assign a window id for a window.
-
-        :param window_number:
-            If None, the current window.
-        :param window_id:
-            The window id to use. If None, a unique id is generated.
+    def __init__(self, wid=None, name=None):
         '''
-        
-        # Create a window id if needed.
-        if window_id is None:
-            window_id = self._find_unique_id()
+        :param wid:
+            If None, the current window id is used or one is generated for the
+            current window if needed. If not None, a search is preformed
+            looking for the supplied wid, and if found an instance is created
+            for that window. If one is not found, the supplied wid is created
+            for the current window.
+        :param name:
+            The name for the current window.
 
-        # Get the window number if it is None.
-        if window_number is None:
-            window_number = int(vim.eval('winnr()'))
+        :raises WIDConflict:
+            No matching wid was found for the supplied wid, and the current
+            window already has a wid. Due to this the instance cannot be
+            created and is failing.
+        '''
 
-        # Get the current window number so we can restore it.
+        # Get the current winnr
         current_winnr = int(vim.eval('winnr()'))
 
-        # Select the window and then write the var.
-        vim.command('exec "normal! \\<C-W>".%s.\'w\'' % window_number)
-        vim.command('let w:id="%s"' % window_id)
+        # If the given wid is None, generate one.
+        if wid is None:
+            # Generate the wid
+            wid = self._find_unique_id()
+
+            # Assign it to the current window.
+            self._assign_win_id(wid)
+        else:
+            # Find the winnr for the wid given, if any.
+            matching_wid_winnr = self._get_winnr_from_id(wid)
+            
+            if matching_wid_winnr is None:
+                # If there are no matching winnr wids, assign it to the current
+                # window.
+                # Note that if there is a matching id, we don't need to
+                # create/assign anything.
+                self._assign_win_id(wid)
+
+        #: The window id for the current window instance.
+        self.wid = wid       
+
+    def _assign_win_id(self, wid=None, winnr=None):
+        '''Assign a window id for a window.
+
+        :param wid:
+            The window id to use. If None, a unique id is generated.
+        :param winnr:
+            If None, the current window.
+        '''
         
-        # Restore the previous window.
-        vim.command('exec "normal! \\<C-W>".%s.\'w\'' % current_winnr)
+        if wid is None:
+            # Create a window id if needed.
+            wid = self._find_unique_id()
+
+        if winnr is None:
+            # Get the window number if it is None.
+            winnr = int(vim.eval('winnr()'))
+            current_winnr = winnr
+        else:
+            current_winnr = int(vim.eval('winnr()'))
+
+        winnr_wid = vim.eval('getwinvar(%s, "id")' % winnr)
+        if winnr_wid is not None and not overwrite:
+            # If the target winnr is not None, then we need to fail so we don't
+            # overwrite the id. Unless it's specified, of course.
+            raise WIDConflict('The winnr:%s already has an id when a write '
+                              'was attempted.' % winnr)
+
+        if winnr == current_winnr:
+            # The two winnrs are the same. No need to select one, assign, and
+            # switch back.
+            vim.command('let w:id="%s"' % wid)
+        else:
+            # The two winnrs are different.
+
+            # Select the window and then write the var.
+            vim.command('exec "normal! \\<C-W>".%s.\'w\'' % winnr)
+            vim.command('let w:id="%s"' % wid)
+            # Restore the previous window.
+            vim.command('exec "normal! \\<C-W>".%s.\'w\'' % current_winnr)
+
+    def _command(self):
+        '''Execute a command from the current window.'''
+        raise NotImplemented()
 
     def _find_unique_id(self):
         '''Check every single window var to find a winvar that does not
-        exist. For reference, the "largest" winvar is chosen, and incremented
+        exist. This is done by taking the "largest" winvar, and incremented
         by one.
         '''
         total_windows = int(vim.eval('winnr("$")'))
 
         largest_winid = 0
-        for _winnr in total_windows:
+        # Remember, winnr's start at 1, not 0.
+        for _winnr in range(1, total_windows+1):
             winvar_result = vim.eval('getwinvar(%s, "id")' % _winnr)
             if winvar_result is not None:
                 try:
@@ -81,91 +125,62 @@ class WindowLayout(object):
         # So increase it by one, and everyone's happy!
         return largest_winid + 1
 
-    def _get_win_id(self, window_number=None):
-        '''Get the id of the current window. An exception is raised of the
-        window does not have an id.
+    def _get_winnr(self):
+        '''Get the win number of the current window.
+        
+        :returns:
+            The winnr of the current window. None is returned
+            if no window has this win id.
+        '''
+        return self._get_winnr_from_id(self.wid)
 
-        :param window_number:
-            The number of the window you want to check. If None, the current
-            window is used.
+    def _get_winnr_from_id(self, wid):
+        '''Get the winnr from the given wid.
+
+        :param wid:
+            A window id.
 
         :returns:
-            The window id for the given window number. If no id exists None
-            is returned.
+            The first winnr that has the wid specified. None is returned
+            if none are found to match.
         '''
-        if window_number is None:
-            window_number = int(vim.eval('winnr()'))
-        return vim.eval('getwinvar(%s, "id")' % window_number)
 
-    def _win_id_exists(self, window_id):
-        '''Check if a window id exists. Note that this is an expensive
-        operation as it searches through *all* of the windows on
-        the current tab to find the given window_id.
-        '''
         total_windows = int(vim.eval('winnr("$")'))
-        for winnr in total_windows:
+        # Remember, winnr's start at 1 not 0
+        for winnr in range(1, total_windows+1):
             winvar_result = vim.eval('getwinvar(%s, "id")' % winnr)
-            if winvar_result == window_id:
-                return True
-        return False
+            if winvar_result == str(wid):
+                return winnr
+        # No matches found. Return None
+        return None
 
-    def create_window(window_id, name=None):
-        '''Create a new window, and return the window object.'''
+    def has_focus(self):
+        '''Does this window have focus?
 
-        # Just putting a hold on this function for now.
-        raise NotImplemented()
-
-        # Check if that id already exists. If it does, fail it.
-        if self._win_id_exists(window_id):
-            raise NotImplemented()
-
-        # For now, just create a window by splitting the current window to the
-        # top.
-        vim.command('topleft new %s' % name)
-        # Get the latest, hopefully newest, window.
-        vim_window = vim.windows[len(vim.windows)-1]
-        return Window(vim_window)
-
-class SplitLayout(WindowLayout):
-    '''A layout manager based around splitting windows.'''
-
-    def __init__(self, *args, **kwargs):
-        super(SplitLayout, self).__init__(*args, **kwargs)
-
-        # Since we are basing this layout off of splits, we want to get
-        # all the windows and create an internal list for every window
-        # index. We will only lazily create these windows though.
-
-        # Grab the total windows, and create a list.
-        self._window_list = [None] * len(vim.windows)
-
-        # Create a window object for the current window.
-        current_winnr = vim.eval('winnr()')
-        self._window_list[current_winnr-1] = Window(self) 
-
-class Window(object):
-    '''An instance of a Vim window.'''
-
-
-    def __init__(self, layout):
-
-        # The layout manager for this window.
-        self._layout = layout
-
-    def _command(self, silent=False):
-        '''Execute a command from the current window.'''
-        pass
-
-    def _get_winnr(self):
-        '''Get the win number of the current window.'''
-        pass
+        :returns:
+            True if it does, False otherwise.
+        '''
+        focused_winnr = int(vim.eval('winnr()'))
+        return focused_winnr == self._get_winnr()
     
-    def split(self, plane, new_window_side, name=None):
+    def split(self, plane, new_window_side, wid=None, name=None):
         '''Split a window on the plane specified, either horizontal or
         vertical. The new window will go on the side specified,
         either above/below/left/right.
 
-        This will return a new Window object.
+        :param plane:
+            The plane to split this window on. Either `horizontal`
+            or `vertical`
+        :param new_window_side:
+            The side the new window will be placed. Depending on the
+            splitting plane, either above/below/left/right.
+        :param wid:
+            The wid of the window.
+        :param name:
+            The name of the window.
+
+        :returns:
+            This will return a new :class:`Window` instance.
         '''
 
         # A simple translation map converting the acceptable arguments into
@@ -186,14 +201,17 @@ class Window(object):
         }
 
         if name is None:
-            name = ''
+            name_ = ''
+        else:
+            name_ = name
 
         # Create the vim window
         vim.command('%s %s new %s' % (
             vim_plane_options[plane], vim_side_options[new_window_side],
-            name))
+            name_))
 
-        # Get the highest indexing window.. hopefully this is always the
-        # latest window.
-        return Window(vim.windows[len(vim.windows)-1])
+        # Now grab the current window, which should be the new window, and
+        # create it. .. And return it.
+        return Window(wid=wid, name=name)
+
     

@@ -2,7 +2,7 @@
 '''
 
 import logging
-from vim_tools.windows import Window, create_window
+from vim_tools.gui import Window
 
 
 logger = logging.getLogger('vimbug')
@@ -22,27 +22,27 @@ class VimGui(Interface):
         pass
 
     def create_windows(self):
+        '''Create the windows for the vim gui.'''
+
         self.windows = {}
-        
-        # Create the first window..
-        self.windows['source'] = create_window(
-            name='SOURCE',)
+        # Create an instance of our current window..
+        self.windows['source'] = Window(wid='source', name='SOURCE')
         # And all our splits from that.
         self.windows['stdstream'] = self.windows['source'].split(
             plane='vertical', new_window_side='right',
-            name='STDOUT_STDERR',)
+            wid='stdout_stderr', name='STDOUT_STDERR',)
         self.windows['scope'] = self.windows['stdstream'].split(
             plane='horizontal', new_window_side='above',
-            name='SCOPE',)
+            wid='scope', name='SCOPE',)
         self.windows['stack'] = self.windows['scope'].split(
             plane='horizontal', new_window_side='above',
-            name='STACK',)
+            wid='stack', name='STACK',)
         self.windows['prompt'] = self.windows['stack'].split(
             plane='horizontal', new_window_side='above',
-            name='PROMPT',)
+            wid='prompt', name='PROMPT',)
         self.windows['prompt_out'] = self.windows['prompt'].split(
             plane='vertical', new_window_side='right',
-            name='PROMPT_OUTPUT',)
+            wid='prompt_output', name='PROMPT_OUTPUT',)
 
     def load(self, save_original_state=True):
         '''Create the gui, load the buffers, etc.'''

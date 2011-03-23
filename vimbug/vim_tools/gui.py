@@ -94,9 +94,63 @@ class Window(object):
             # Restore the previous window.
             vim.command('exec "normal! \\<C-W>".%s.\'w\'' % current_winnr)
 
-    def _command(self):
-        '''Execute a command from the current window.'''
-        raise NotImplemented()
+    def _command(self, command, winnr=None, preserve_focus=False):
+        '''Execute a command from the specified window.
+
+        :param winnr:
+            The winnr of the window to execute the command under.
+        :param preserve_focus:
+            If True, the window focus will be restored after this command is
+            executed.
+        '''
+        if winnr is None:
+            vim.command(command)
+            return
+
+        original_winnr = int(vim.eval('winnr()'))
+        matching_winnr = original_winnr == winnr
+        
+        if not matching_winnr:
+            # If we need to change focus.. change focus.
+            self._set_focus(winnr)
+
+        # Now execute the command.
+        vim.command(command)
+
+        if preserve_focus and not matching_winnr:
+            # If we need to restore the focus.. do it.
+            self._set_focus(winnr)
+
+    def _eval(self, eval_, winnr=None, preserve_focus=False):
+        '''Return the eval of a given string.
+
+        :param winnr:
+            The window number of the target window.
+        :param preserve_focus:
+            If True, the window focus will be restored after this command is
+            executed.
+
+        :returns:
+            The vim eval of the supplied string.
+        '''
+        if winnr is None:
+            return vim.eval(eval_)
+
+        original_winnr = int(vim.eval('winnr()'))
+        matching_winnr = original_winnr == winnr
+        
+        if not matching_winnr:
+            # If we need to change focus.. change focus.
+            self._set_focus(winnr)
+
+        # Now execute the eval.
+        eval_output = vim.eval(eval_)
+
+        if preserve_focus and not matching_winnr:
+            # If we need to restore the focus.. do it.
+            self._set_focus(winnr)
+
+        return eval_output
 
     def _find_unique_id(self):
         '''Check every single window var to find a winvar that does not
@@ -153,6 +207,16 @@ class Window(object):
                 return winnr
         # No matches found. Return None
         return None
+
+    def _set_focus(self, winnr):
+        '''Set focus on a window.
+
+        :param winnr:
+            The window to set focus to.
+        '''
+        # Make sure not to use any additional arguments to self._command
+        # from self._set_focus... the world may asplode.
+        self._command('exec "normal! \\<C-W>".%s.\'w\'' % winnr)
 
     def has_focus(self):
         '''Does this window have focus?

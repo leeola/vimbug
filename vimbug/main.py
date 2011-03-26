@@ -8,6 +8,7 @@ from interface import VimGui as Interface
 from session import SessionInformation
 
 
+logging.basicConfig()
 logger = logging.getLogger('vimbug')
 # An instance of VimBug if a session exists.
 vimbug_session = None

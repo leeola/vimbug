@@ -1,13 +1,18 @@
 '''Errors for vim tools.'''
 
-from exception import Exception
+from exceptions import Exception
 
 
 class VimToolsError(Exception):
     '''The base VimTools error.'''
     pass
 
-class NoWindowDError(VimToolsError):
-    '''A vim window does not have the value w:id'''
+class BufferNotFoundError(VimToolsError):
+    pass
+
+class WIDConflictError(VimToolsError):
+    pass
+
+class WIDNotFoundError(VimToolsError):
     pass
 

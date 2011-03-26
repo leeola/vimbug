@@ -5,9 +5,53 @@ from random import randint
 
 import vim
 
+import commands
+
 
 logger = logging.getLogger('vimbug')
 
+
+class Buffer(object):
+    '''An instance of a vim buffer.'''
+
+
+    def __init__(self, name=None):
+        '''
+        :param name:
+            A string expression to find/create a buffer from. Some usage
+            examples are as follows..::
+
+                __init__('#')       # The alternate buffer
+                __init__(3)         # The buffer number 3. Note that this is
+                                    # an integer. '3' does not equate to 3.
+                __init__('%')       # The current buffer. 
+                __init__('file2')   # A buffer where "file2" matches.
+                __init__(None)      # The current buffer. Same as '%'
+                __init__('new_name')# A new, none existant name. This will
+                                    # *create* a buffer.
+        '''
+
+        if name is None:
+            # No buffer name was specified. Set the buffer name to the
+            # current windows buffer.
+            name = commands.get_buffer_name(self._eval('winbufnr(0)'))
+        elif not commands.buffer_exists(name):
+            # The buffer does not exist. Create it.
+            commands.create_buffer(name)
+
+        # Since the only constant with buffers is the number, get that and
+        # store it.
+        #: The buff number as shown by `:ls`
+        self._buffer_number = commands.get_buffer_number(name)
+
+  
+    def set_type(self, type):
+        '''Set the type for this buffer.
+        
+        :param type:
+            One of the accepted vim buffer types.
+        '''
+        raise NotImplemented()
 
 class Window(object):
     '''An instance of a Vim window.'''
@@ -23,11 +67,6 @@ class Window(object):
             for the current window.
         :param name:
             The name for the current window.
-
-        :raises WIDConflict:
-            No matching wid was found for the supplied wid, and the current
-            window already has a wid. Due to this the instance cannot be
-            created and is failing.
         '''
 
         # Get the current winnr
@@ -61,6 +100,11 @@ class Window(object):
             The window id to use. If None, a unique id is generated.
         :param winnr:
             If None, the current window.
+
+        :raises WIDConflict:
+            No matching wid was found for the supplied wid, and the current
+            window already has a wid. Due to this the instance cannot be
+            created and is failing.
         '''
         
         if wid is None:

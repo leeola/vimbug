@@ -2,7 +2,7 @@
 '''
 
 import logging
-from vim_tools.gui import Window
+from vim_tools.gui import Buffer, Window
 
 
 logger = logging.getLogger('vimbug')
@@ -17,32 +17,47 @@ class VimGui(Interface):
     def __init__(self, session_information):
         self.session_information = session_information
 
-    def close(self, load_original_state=True):
-        ''''''
-        pass
+    def _create_buffers(self):
+        '''Create the buffers for the vim gui.'''
 
-    def create_windows(self):
+        self.buffers = {
+            # Load the current buffer.
+            'source':Buffer(),
+            # Create the other used to display debug info.
+            'stdstream':Buffer(name='STDOUT_STDERR', type='nofile'),
+            'scope':Buffer(name='SCOPE', type='nofile'),
+            'stack':Buffer(name='STACK', type='nofile'),
+            'prompt':Buffer(name='PROMPT', type='nofile'),
+            'prompt_out':Buffer(name='PROMPT_OUT', type='nofile'),
+        }
+
+    def _create_windows(self):
         '''Create the windows for the vim gui.'''
 
         self.windows = {}
         # Create an instance of our current window..
-        self.windows['source'] = Window(wid='source', name='SOURCE')
+        self.windows['source'] = Window(wid='source',
+                                        buffer=self.buffers['source'])
         # And all our splits from that.
         self.windows['stdstream'] = self.windows['source'].split(
             plane='vertical', new_window_side='right',
-            wid='stdout_stderr', name='STDOUT_STDERR',)
+            wid='stdout_stderr', buffer=self.buffers['stdstream'],)
         self.windows['scope'] = self.windows['stdstream'].split(
             plane='horizontal', new_window_side='above',
-            wid='scope', name='SCOPE',)
+            wid='scope', buffer=self.buffers['scope'],)
         self.windows['stack'] = self.windows['scope'].split(
             plane='horizontal', new_window_side='above',
-            wid='stack', name='STACK',)
+            wid='stack', buffer=self.buffers['stack'],)
         self.windows['prompt'] = self.windows['stack'].split(
             plane='horizontal', new_window_side='above',
-            wid='prompt', name='PROMPT',)
+            wid='prompt', buffer=self.buffers['scope'],)
         self.windows['prompt_out'] = self.windows['prompt'].split(
             plane='vertical', new_window_side='right',
-            wid='prompt_output', name='PROMPT_OUTPUT',)
+            wid='prompt_output', buffer=self.buffers['prompt_output'])
+
+    def close(self, load_original_state=True):
+        ''''''
+        pass
 
     def load(self, save_original_state=True):
         '''Create the gui, load the buffers, etc.'''
@@ -52,5 +67,6 @@ class VimGui(Interface):
 
         logger.debug('Loading VimGui..')
 
-        self.create_windows()
+        self._create_buffers()
+        self._create_windows()
  

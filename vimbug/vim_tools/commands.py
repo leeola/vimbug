@@ -147,7 +147,7 @@ def _toggle_window(winnr, func, args=None, kwargs=None):
 
     return func_result
 
-def assign_window_id(id=None, winnr=None):
+def assign_id_to_winnr(id=None, winnr=None):
     '''Assign a window id for a window.
 
     :param wid:
@@ -173,12 +173,13 @@ def assign_window_id(id=None, winnr=None):
     else:
         current_winnr = int(eval('winnr()'))
 
-    winnr_wid = eval('getwinvar(%s, "id")' % winnr)
-    if winnr_wid is not None:
+    winnr_id = eval('getwinvar(%s, "id")' % winnr)
+    if winnr_id is not None:
         # If the target winnr is not None, then we need to fail so we don't
         # overwrite the id.
         raise WIDConflictError('The winnr:%s already has an id when a write '
-                               'was attempted.' % winnr)
+                               'was attempted. Current id:%s, attempted '
+                               'id:%s' % (winnr, winnr_id, id))
 
     # We have to toggle ourselves, since no w:id exists to pass into
     # window_command()
@@ -381,6 +382,16 @@ def set_buffer_type(type, expression=None):
     if type is None:
         type = ''
     buffer_command('set buftype=%s' % type, expression)
+
+def set_window_buffer(id, buffer_name):
+    '''Set the buffer a window is using.
+
+    :param id:
+        A window id to assign the buffer to.
+    :param buffer_name:
+        The buffer name or number to assign to this window.
+    '''
+    window_command('b %s' % buffer_name, id=id, toggle=True)
 
 def window_command(command_, id=None, toggle=True):
     '''Execute a command within the specified window, if any.

@@ -12,9 +12,12 @@ work with any DBGp compliant server, it just hasn't been reliably
 It is an attempted rewrite/continuation of where
 `Jared Forsyth <http://jaredforsyth.com>`_ left off with 
 `vim-debug <http://jaredforsyth.com/projects/vim-debug>`_. Once Jared gets
-back and is able to program again, it would be great to merge much of this
-code back into vim-debug where any additional features belong. Until then,
-this project will *attempt* to add new features and improve code.
+back and is able to program again, it would be great to merge some of this
+code into vim-debug, but it seems less and less likely as time goes on. The
+rewrite is beginning to be quite and undertaking, and who knows what can
+be brought back into vim-debug. That problem can be tackled when it comes
+up. Until then, this project will *attempt* to add new features and
+improve code.
 
 Thanks for the wonderful work Jared!
 

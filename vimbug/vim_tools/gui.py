@@ -159,6 +159,38 @@ class Window(object):
             A :class:`Buffer` instance.
         '''
         commands.set_window_buffer(self._id, buffer.get_number())
+
+    def set_height(self, height, use_percentage=False):
+        '''Set the window height.
+
+        :param height:
+           The desired height in lines or percentage *(0.0 through 1.0)*.
+        :param use_percentage:
+            If True, the value of height is calculated as a percentage of
+            the total lines in the vim frame.
+        '''
+        if use_percentage:
+            vim_height = commands.get_vim_height()
+            # We're using int() because we don't want to round up.. so
+            # i think this is an acceptible practice .. :s
+            height = int(vim_height * height)
+        commands.set_window_height(self._id, height)
+
+    def set_width(self, width, use_percentage=False):
+        '''Set the window width.
+
+        :param width:
+            The desired width, in lines or percentage  *(0.0 through 1.0)*.
+        :param use_percentage:
+            If True, the value of width is calculated as a percentage of
+            the total lines in the vim frame.
+        '''
+        if use_percentage:
+            vim_width = commands.get_vim_width()
+            # We're using int() because we don't want to round up.. so
+            # i think this is an acceptible practice .. :s
+            width = int(vim_width * width)
+        commands.set_window_width(self._id, width)
     
     def split(self, plane, new_window_side, id=None):
         '''Split a window on the plane specified, either horizontal or

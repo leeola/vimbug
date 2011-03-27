@@ -38,13 +38,12 @@ def _format_expression(expression):
     :returns:
         A formatted string expression.
     '''
-    if None:
-        expression = '"%"'
+    if expression is None:
+        return '"%"'
     elif isinstance(expression, int):
-        expression = '3'
+        return str(expression)
     else:
-        expression = '"%s"' % expression
-    return expression
+        return '"%s"' % expression
 
 def _set_focus(winnr):
     '''The private version of :func:`set_focus()`. The only difference is
@@ -59,11 +58,11 @@ def _set_focus(winnr):
     '''
     command('exec "normal! \\<C-W>".%s.\'w\'' % winnr)
 
-def _toggle_buffer(expression, func, args=None, kwargs=None):
+def _toggle_buffer(formatted_expression, func, args=None, kwargs=None):
     '''A helper function to set the active buffer to the buffer specified,
     and then return the active buffer to the original.. i worded that poorly.
 
-    :param expression:
+    :param formatted_expression:
         A string expression which will match the buffer to toggle. See
         :func:`buffer_command()` documentation for reference.
 
@@ -91,22 +90,23 @@ def _toggle_buffer(expression, func, args=None, kwargs=None):
         kwargs = {}
 
     # Get the current and target buffers..
-    current_buffer = buffer_eval('bufnr("%")')
-    target_buffer = buffer_eval('bufnr(%s)' % expression)
-    same_buffer = current_buffer == target_buffer
-    if target_buffer == '-1':
+    original_bufnr = buffer_eval('bufnr("%")')
+    target_bufnr = buffer_eval('bufnr(%s)' % formatted_expression)
+    same_bufnr = original_bufnr == target_bufnr
+    if target_bufnr == '-1':
         raise BufferNotFoundError(
-            'No buffer matching the following expression: %s' % expression)
+            'No buffer matching the following expression: '
+            '%s' % formatted_expression)
 
-    if same_buffer:
+    if same_bufnr:
         return func(*ags, **kwargs)
 
     # Change the active buffer..
-    command('b %s' % target_buffer)
+    command('b %s' % target_bufnr)
     # Get the result
     func_result = func(*args, **kwargs)
     # And now change it back.
-    command('b %s' % current_bufnum)
+    command('b %s' % original_bufnr)
 
     return func_result
 
@@ -147,7 +147,7 @@ def _toggle_window(winnr, func, args=None, kwargs=None):
 
     return func_result
 
-def assign_window_id(self, id=None, winnr=None):
+def assign_window_id(id=None, winnr=None):
     '''Assign a window id for a window.
 
     :param wid:
@@ -231,6 +231,21 @@ def buffer_eval(eval_, expression=None):
     else:
         return eval(eval_)
 
+def buffer_exists(expression):
+    '''Check whether a buffer exists or not.
+
+    :param expression:
+        A string expression to find a buffer name from. See
+        :func:`buffer_command()` documentation for reference.
+    
+    :returns:
+        True if a match for the expression is found, False otherwise.
+    '''
+    # Format the exp.
+    expression = _format_expression(expression)
+
+    return eval('bufexists(%s)' % expression) == '1'
+
 def command(command_):
     '''A simple local function for vim.command.
 
@@ -260,21 +275,6 @@ def eval(eval_):
     '''
     return vim_eval(eval_)
 
-def exists(expression):
-    '''Check whether a buffer exists or not.
-
-    :param expression:
-        A string expression to find a buffer name from. See
-        :func:`buffer_command()` documentation for reference.
-    
-    :returns:
-        True if a match for the expression is found, False otherwise.
-    '''
-    # Format the exp.
-    expression = _format_expression(expression)
-
-    return buffer_eval('bufexists(%s)' % expression) == '1'
-
 def find_unique_window_id(self):
     '''Check every single window var to find a winvar that does not
     exist. This is done by taking the "largest" winvar, and incremented
@@ -302,15 +302,20 @@ def find_unique_window_id(self):
     # So increase it by one, and everyone's happy!
     return largest_winid + 1
 
+def get_current_winnr():
+    '''Simply get the current winnr.
+
+    :returns:
+        The currently active window number. Converted to an int.
+    '''
+    return int(eval('winnr()'))
+
 def get_buffer_name(expression):
     '''Get a buffer name.
 
     :param expression:
         A string expression to find a buffer name from. See
         :func:`buffer_command()` documentation for reference.
-
-    :raises BufferNotFoundError:
-        Raised if there are no buffers that match the expression given.
 
     :returns:
         The buffer name.
@@ -319,14 +324,27 @@ def get_buffer_name(expression):
     expression = _format_expression(expression)
 
     # Get the bufname result.
-    buffer_name = eval('bufname(%s)' % expression)
+    return eval('bufname(%s)' % expression)
 
-    if buffer_name is None:
-        # Raise an error if no matches were found.
-        raise BufferNotFoundError('No buffer name could be found for the '
-                                  'expression %s.' % expression)
+def get_buffer_number(expression=None):
+    '''Get a buffer number.
 
-    return buffer_name
+    :param expression:
+        A string expression to find a buffer name from. See
+        :func:`buffer_command()` documentation for reference.
+
+    :returns:
+        The buffer number.
+    '''
+    # Format the exp.
+    expression = _format_expression(expression)
+
+    # Get the bufnum.
+    eval_result = eval('bufnr(%s)' % expression)
+    if eval_result == '-1':
+        raise BufferNotFoundError(
+            'No buffer matching the following expression: %s' % expression)
+    return int(eval_result)
 
 def get_winnr_from_id(id):
     '''Get the winnr from the given window id.
@@ -343,7 +361,7 @@ def get_winnr_from_id(id):
     # Remember, winnr's start at 1 not 0
     for winnr in range(1, total_windows+1):
         winvar_result = eval('getwinvar(%s, "id")' % winnr)
-        if winvar_result == str(wid):
+        if winvar_result == str(id):
             return winnr
     # No matches found. Return None
     return None
@@ -352,7 +370,7 @@ def set_buffer_type(type, expression=None):
     '''Set the buftype variable for the given expression. If any.
 
     :param type:
-        One of the accepted vim buffer types.
+        One of the accepted vim buffer types. If None, an empty buftype is used.
     :param expression:
         A string expression to find a buffer name from. See
         :func:`buffer_command()` documentation for reference.
@@ -360,7 +378,9 @@ def set_buffer_type(type, expression=None):
     :raises BufferNotFoundError:
         Raised if there are no buffers that match the expression given.
     '''
-    raise NotImplementedError()
+    if type is None:
+        type = ''
+    buffer_command('set buftype=%s' % type, expression)
 
 def window_command(command_, id=None, toggle=True):
     '''Execute a command within the specified window, if any.
@@ -377,14 +397,21 @@ def window_command(command_, id=None, toggle=True):
     :raises WIDNotFoundError:
         The wid supplied cannot be found within the current tab.
     '''
-    if id is not None and not window_id_exists(id):
+    if id is None:
+        # If the id is None, we can't toggle anything anyway,
+        # so run the command.
+        command(command_)
+
+    winnr = get_winnr_from_id(id)
+    if winnr is None: 
         # If the window id does not exist, raise a failure.
         raise WIDNotFoundError('The window id given does not exist.')
     
     if toggle:
-        _toggle_window(id, command, args=(command_,))
+        _toggle_window(winnr, command, args=(command_,))
     else:
-        command(command)
+        _set_focus(winnr)
+        command(command_)
 
 def window_eval(eval_, id=None, toggle=True):
     '''Run the given eval in the specified window, if any.
@@ -393,13 +420,40 @@ def window_eval(eval_, id=None, toggle=True):
     :returns:
         The eval response from the context of the window specified.
     '''
-    if id is not None and not window_id_exists(id):
+    if id is None:
+        # If the id is None, we can't toggle anything anyway,
+        # so run the command.
+        command(command_)
+
+    winnr = get_winnr_from_id(id)
+    if winnr is None: 
         # If the window id does not exist, raise a failure.
         raise WIDNotFoundError('The window id given does not exist.')
     
     if toggle:
-        _toggle_window(id, eval, args=(eval_,))
+        _toggle_window(winnr, eval, args=(eval_,))
     else:
+        _set_focus(winnr)
         eval(eval_)
 
+def window_id_exists(id):
+    '''Check whether a window id exists or not. Currently this is done by
+    looping through all of the windows and seeing if an id exists. In
+    the future a tab var holding all of the ids is planned.. i think?
+
+    :param id:
+        The id to check.
+
+    :returns:
+        True if a window is found to have a w:id variable with the value of
+        id, and False otherwise.
+    '''
+    total_windows = int(eval('winnr("$")'))
+    
+    # Remember, winnr's start at 1, not 0.
+    for _winnr in range(1, total_windows+1):
+        winvar_result = eval('getwinvar(%s, "id")' % _winnr)
+        if winvar_result is not None and winvar_result == str(id):
+            return True
+    return False
 

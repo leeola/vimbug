@@ -48,7 +48,7 @@ class Buffer(object):
         :param type:
             One of the accepted vim buffer types.
         '''
-        raise NotImplemented()
+        commands.set_buffer_type(type=type, expression=self._buffer_number)
 
 class Window(object):
     '''An instance of a Vim window.'''
@@ -65,7 +65,7 @@ class Window(object):
         '''
 
         # Get the current winnr
-        current_winnr = int(vim.eval('winnr()'))
+        current_winnr = commands.get_current_winnr()
 
         # If the given wid is None, generate one.
         if id is None:
@@ -130,7 +130,7 @@ class Window(object):
         '''
         raise NotImplementedError()
     
-    def split(self, plane, new_window_side, id=None, buffer=None):
+    def split(self, plane, new_window_side, id=None):
         '''Split a window on the plane specified, either horizontal or
         vertical. The new window will go on the side specified,
         either above/below/left/right.
@@ -143,9 +143,6 @@ class Window(object):
             splitting plane, either above/below/left/right.
         :param wid:
             The wid of the window.
-        :param buffer:
-            An instance of the :class:`Buffer` class. If None, no buffer
-            is used.
 
         :returns:
             This will return a new :class:`Window` instance.
@@ -169,15 +166,14 @@ class Window(object):
         }
 
         # Create the vim window
-        vim.command('%s %s new' % (
-            vim_plane_options[plane], vim_side_options[new_window_side]))
+        commands.window_command('%s %s new' % (
+            vim_plane_options[plane], vim_side_options[new_window_side]),
+            id=self._id,
+            toggle=True)
 
         # Now grab the current window, which should be the new window, and
         # create it.
         window = Window(id=id)
-
-        #if buffer is not None:
-        #    window.set_buffer(buffer)
 
         return window
 

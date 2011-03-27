@@ -171,8 +171,8 @@ class Window(object):
         :param new_window_side:
             The side the new window will be placed. Depending on the
             splitting plane, either above/below/left/right.
-        :param wid:
-            The wid of the window.
+        :param id:
+            The id of the window.
 
         :returns:
             This will return a new :class:`Window` instance.

@@ -265,6 +265,15 @@ def create_buffer(name):
     # your fingers folks.. hey, i think it works, leave me alone.
     command('badd %s' % name)
 
+def delete_buffer_content(bufnr):
+    '''Delete the contents of the specified buffer.
+
+    :param bufnr:
+        The buffer number to delete.
+    '''
+    # Grabbed from irc support.. not sure if the underscore is even useful..
+    buffer_command(command_='%delete _', expression=bufnr)
+
 def eval(eval_):
     '''A simple local function for vim.eval.
 
@@ -347,6 +356,22 @@ def get_buffer_number(expression=None):
             'No buffer matching the following expression: %s' % expression)
     return int(eval_result)
 
+def get_vim_height():
+    '''Get the height of the vim frame itself.
+
+    :returns:
+        The height of the vim frame itself, in lines.
+    '''
+    return int(eval('&lines'))
+
+def get_vim_width():
+    '''Get the width of the vim frame itself.
+
+    :returns:
+        The width of the vim frame itself, in lines.
+    '''
+    return int(eval('&columns'))
+
 def get_winnr_from_id(id):
     '''Get the winnr from the given window id.
 
@@ -392,6 +417,28 @@ def set_window_buffer(id, buffer_name):
         The buffer name or number to assign to this window.
     '''
     window_command('b %s' % buffer_name, id=id, toggle=True)
+
+def set_window_height(id, height):
+    '''Set the window height.
+
+    :param id:
+        The id of the window to set the height of.
+    :param height:
+        The height of the window, in lines.
+    '''
+    winnr = get_winnr_from_id(id)
+    _toggle_window(winnr, command, args=('resize %s' % height,))
+
+def set_window_width(id, width):
+    '''Set the window width.
+
+    :param id:
+        The id of the window to set the width of.
+    :param width:
+        The width of the window, in lines.
+    '''
+    winnr = get_winnr_from_id(id)
+    _toggle_window(winnr, command, args=('vertical resize %s' % width,))
 
 def window_command(command_, id=None, toggle=True):
     '''Execute a command within the specified window, if any.
@@ -467,4 +514,17 @@ def window_id_exists(id):
         if winvar_result is not None and winvar_result == str(id):
             return True
     return False
+
+def write_buffer(text, line='$', expression=None):
+    '''Write text to a buffer.
+
+    :param text:
+        The text to write.
+    '''
+    if isinstance(text, basestring):
+        # Wrap the string in quotes so that it is submitted to the command
+        # as a vim string.
+        line = '"%s"' % line
+    buffer_command(command_='call append(line(%s), %s)' % (line, text.split('\n')),
+                   expression=expression)
 

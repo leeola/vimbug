@@ -42,6 +42,18 @@ class Buffer(object):
         #: The buff number as shown by `:ls`
         self._buffer_number = commands.get_buffer_number(name)
 
+    def append(self, text):
+        '''Append text to the end of the buffer.
+
+        :param text:
+            The text to append.
+        '''
+        commands.write_buffer(text, expression=self._buffer_number)
+
+    def delete(self):
+        '''Delete the contents of this buffer.'''
+        commands.delete_buffer_content(self._buffer_number)
+
     def get_number(self):
         '''Return the number of this buffer.
 
@@ -56,6 +68,33 @@ class Buffer(object):
             One of the accepted vim buffer types.
         '''
         commands.set_buffer_type(type=type, expression=self._buffer_number)
+
+    def write(self, text, title=None, pre_title='[[', post_title=']]'):
+        '''Write text to the buffer. To simply append,
+        see :meth:`self.append()`.
+        
+        :param text:
+            The text to write to the buffer.
+        :param title:
+            The title of the text to write. The title is simply a bit of text
+            placed at the top of the text being written.
+        :param pre_title:
+            A bit of text which is placed before the title.
+        :param post_title:
+            A bit of text that is placed after the title.
+        '''
+
+        if title is not None:
+            text = '%(pre_title)s%(title)s%(post_title)s\n\n%(text)s' % {
+                'pre_title':pre_title,
+                'title':title,
+                'post_title':post_title,
+                'text':text,
+            }
+
+        # Now delete, and write the text.
+        self.delete()
+        commands.write_buffer(text, expression=self._buffer_number)
 
 class Window(object):
     '''An instance of a Vim window.'''
@@ -159,6 +198,38 @@ class Window(object):
             A :class:`Buffer` instance.
         '''
         commands.set_window_buffer(self._id, buffer.get_number())
+
+    def set_height(self, height, use_percentage=False):
+        '''Set the window height.
+
+        :param height:
+           The desired height in lines or percentage *(0.0 through 1.0)*.
+        :param use_percentage:
+            If True, the value of height is calculated as a percentage of
+            the total lines in the vim frame.
+        '''
+        if use_percentage:
+            vim_height = commands.get_vim_height()
+            # We're using int() because we don't want to round up.. so
+            # i think this is an acceptible practice .. :s
+            height = int(vim_height * height)
+        commands.set_window_height(self._id, height)
+
+    def set_width(self, width, use_percentage=False):
+        '''Set the window width.
+
+        :param width:
+            The desired width, in lines or percentage  *(0.0 through 1.0)*.
+        :param use_percentage:
+            If True, the value of width is calculated as a percentage of
+            the total lines in the vim frame.
+        '''
+        if use_percentage:
+            vim_width = commands.get_vim_width()
+            # We're using int() because we don't want to round up.. so
+            # i think this is an acceptible practice .. :s
+            width = int(vim_width * width)
+        commands.set_window_width(self._id, width)
     
     def split(self, plane, new_window_side, id=None):
         '''Split a window on the plane specified, either horizontal or
@@ -171,8 +242,8 @@ class Window(object):
         :param new_window_side:
             The side the new window will be placed. Depending on the
             splitting plane, either above/below/left/right.
-        :param wid:
-            The wid of the window.
+        :param id:
+            The id of the window.
 
         :returns:
             This will return a new :class:`Window` instance.

@@ -42,6 +42,18 @@ class Buffer(object):
         #: The buff number as shown by `:ls`
         self._buffer_number = commands.get_buffer_number(name)
 
+    def append(self, text):
+        '''Append text to the end of the buffer.
+
+        :param text:
+            The text to append.
+        '''
+        commands.write_buffer(text, expression=self._buffer_number)
+
+    def delete(self):
+        '''Delete the contents of this buffer.'''
+        commands.delete_buffer_content(self._buffer_number)
+
     def get_number(self):
         '''Return the number of this buffer.
 
@@ -56,6 +68,33 @@ class Buffer(object):
             One of the accepted vim buffer types.
         '''
         commands.set_buffer_type(type=type, expression=self._buffer_number)
+
+    def write(self, text, title=None, pre_title='[[', post_title=']]'):
+        '''Write text to the buffer. To simply append,
+        see :meth:`self.append()`.
+        
+        :param text:
+            The text to write to the buffer.
+        :param title:
+            The title of the text to write. The title is simply a bit of text
+            placed at the top of the text being written.
+        :param pre_title:
+            A bit of text which is placed before the title.
+        :param post_title:
+            A bit of text that is placed after the title.
+        '''
+
+        if title is not None:
+            text = '%(pre_title)s%(title)s%(post_title)s\n\n%(text)s' % {
+                'pre_title':pre_title,
+                'title':title,
+                'post_title':post_title,
+                'text':text,
+            }
+
+        # Now delete, and write the text.
+        self.delete()
+        commands.write_buffer(text, expression=self._buffer_number)
 
 class Window(object):
     '''An instance of a Vim window.'''

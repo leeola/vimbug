@@ -60,7 +60,7 @@ class VimGui(Interface):
             id='prompt_output')
 
         source_width = 0.55
-        # The right column is 40% wide, so we want to make our
+        # The right column is 45% wide, so we want to make our
         # prompt 50% of that.
         prompt_width = (1.0 - source_width) / 2
 
@@ -70,6 +70,7 @@ class VimGui(Interface):
 
         # Add the buffers
         for key, window in self.windows.items():
+            # We assume the buffers and windows share the same key.
             window.set_buffer(self.buffers[key])
 
     def close(self, load_original_state=True):

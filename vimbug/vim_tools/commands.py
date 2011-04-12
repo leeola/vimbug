@@ -265,6 +265,15 @@ def create_buffer(name):
     # your fingers folks.. hey, i think it works, leave me alone.
     command('badd %s' % name)
 
+def delete_buffer_content(bufnr):
+    '''Delete the contents of the specified buffer.
+
+    :param bufnr:
+        The buffer number to delete.
+    '''
+    # Grabbed from irc support.. not sure if the underscore is even useful..
+    buffer_command(command_='%delete _', expression=bufnr)
+
 def eval(eval_):
     '''A simple local function for vim.eval.
 
@@ -505,4 +514,17 @@ def window_id_exists(id):
         if winvar_result is not None and winvar_result == str(id):
             return True
     return False
+
+def write_buffer(text, line='$', expression=None):
+    '''Write text to a buffer.
+
+    :param text:
+        The text to write.
+    '''
+    if isinstance(text, basestring):
+        # Wrap the string in quotes so that it is submitted to the command
+        # as a vim string.
+        line = '"%s"' % line
+    buffer_command(command_='call append(line(%s), %s)' % (line, text.split('\n')),
+                   expression=expression)
 

@@ -1,7 +1,8 @@
 
 from attest import Tests
-from tests.interface_commands import interface_commands
+from tests.dbgp.socket_connection import socket_connection
 
 tests = Tests([
-    interface_commands,])
+    socket_connection,
+])
 

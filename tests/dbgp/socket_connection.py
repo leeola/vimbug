@@ -27,7 +27,7 @@ OPTIONS = {
     'pydbgp_port':9000,
     # A port that nothing should be listening on. This will be
     # used for failed connection testing.
-    'empty_port':9001,
+    'empty_port':8991,
 }
 
 socket_connection = Tests()
@@ -38,7 +38,7 @@ def connecting_to_nothing():
     '''Ensure the socket fails when connecting to an empty port.'''
     con = SocketConnection(port=OPTIONS['empty_port'])
     with raises(DBGPServerNotFoundError) as error:
-        con.listen()
+        con.connect()
 
 @socket_connection.context
 def create_socket():
@@ -52,13 +52,14 @@ def create_socket():
 def connect_to_pydbg(con):
     '''Initiate the pydbgp process and start listening for it.'''
     # Launch the pydbgp process
+    print OPTIONS['debug_file']
     pydbgp_proc = subprocess.Popen(
         ('pydbgp.py', '-d', 'localhost:%i' % OPTIONS['pydbgp_port'],
         OPTIONS['debug_file']),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,)
     # Set SocketConnection to listening.
-    con.listen()
+    con.connect()
     # Ensure that the connection is established.
     Assert(con.connected) == True
 

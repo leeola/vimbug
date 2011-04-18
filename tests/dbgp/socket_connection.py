@@ -22,7 +22,7 @@ from vimbug.dbgp import DBGPServerNotFoundError
 OPTIONS = {
     # A simple file to run the debug server against.
     'debug_file':abspath(join(
-        dirname(__file__), '..', '..', 'context', 'no_imports.py')),
+        dirname(__file__), '..', 'context', 'no_imports.py')),
     # The port the debug server will be listening on.
     'pydbgp_port':9000,
     # A port that nothing should be listening on. This will be
@@ -38,7 +38,8 @@ def connecting_to_nothing():
     '''Ensure the socket fails when connecting to an empty port.'''
     con = SocketConnection(port=OPTIONS['empty_port'])
     with raises(DBGPServerNotFoundError) as error:
-        con.connect()
+        con.listen()
+        con.accept()
 
 @socket_connection.context
 def create_socket():
@@ -53,13 +54,17 @@ def connect_to_pydbg(con):
     '''Initiate the pydbgp process and start listening for it.'''
     # Launch the pydbgp process
     print OPTIONS['debug_file']
+    
+    # Start listening..
+    con.listen()
+    # Launch the dbgp server..
     pydbgp_proc = subprocess.Popen(
         ('pydbgp.py', '-d', 'localhost:%i' % OPTIONS['pydbgp_port'],
         OPTIONS['debug_file']),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,)
-    # Set SocketConnection to listening.
-    con.connect()
-    # Ensure that the connection is established.
-    Assert(con.connected) == True
+    # And accept the connection, if one exists.
+    con.accept()
+    # Ensure that the connection is established, just for kicks.
+    Assert(con.connected()) == True
 

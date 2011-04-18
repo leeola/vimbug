@@ -11,7 +11,7 @@
 '''
 
 import base64
-import socket
+import socket, select
 import logging
 
 from lxml import etree
@@ -43,78 +43,33 @@ class SocketConnection(object):
     in mind.
     '''
 
-    def __init__(self, address='localhost', port=9000, listen_timeout=5):
+    def __init__(self, address='localhost', port=9000):
         '''
         :param address:
             The address of the DBGp Server. Defaults to "localhost"
         :param port:
             The port that the DBGp server is set to. Defaults to 9000 (the
             protocol default too)
-        :param listen_timeout:
-            How long the IDE *(this class)* will listen for the DBGp server
-            to connect.
         '''
         #: The socket object for IO data with the DBGp server. None if 
         #: no connection has been made.
-        self._sock = None
+        self._client_sock = None
+        #: The socket used to listen for the initial server connection.
+        self._listening_server = None
         #: The server address
         self.ADDRESS = address
         #: The port the server is listening on.
         self.PORT = port
-        #: How long to listen for DBGp to connect to this client.
-        self.LISTEN_TIMEOUT = listen_timeout
 
     def __enter__(self):
         '''Setup code for this connection object.'''
         # I don't think anything needs to be done here. Calling
-        # self._sock.__enter__() may be a possibility though.
+        # self._client_sock.__enter__() may be a possibility though.
         pass
 
     def __exit__(self):
         '''Call close on this connection.'''
         self.close()
-
-    def connect(self):
-        '''Start listening for the DBGp server.
-
-        :raises DBGPServerNotFound:
-            Raised if a socket.timeout is thrown from the socket.
-        '''
-        logger.debug(
-            'SocketConnection connecting to "%(address)s:%(port)i."' % {
-                'address':self.ADDRESS,
-                'port':self.PORT,
-            })
-
-        # Set the timeout.
-        socket.setdefaulttimeout(5)
-        
-        # Create our socket stream to listen on.
-        serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # The sock will block for 5 seconds.
-        serv.settimeout(5)
-        # Set the socket options.. yea i forget what these are about.
-        serv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        # Bind the address.
-        serv.bind(('', self.PORT))
-        serv.listen(5)
-
-        try:
-            # Now start listening for a connection!
-            (self._sock, remote_address) = serv.accept()
-        except socket.timeout:
-            logger.debug('Socket connection failed!')
-            raise DBGPServerNotFoundError(
-                'No connection was established coming from '
-                '"%(address)s:%(port)i".' % {
-                    'address':self.ADDRESS,
-                    'port':self.PORT,
-                })
-        else:
-            logger.debug('Socket connection established! The other end of '
-                         'the connection is at "%s:%i".' % remote_address)
-        finally:
-            serv.close()
 
     def connected(self):
         '''Check if this object is connected to the DBGp Server.
@@ -124,5 +79,53 @@ class SocketConnection(object):
         '''
         # Eventually i'll need to set this to actually check the connection.
         # so if the DBGp server drops, this will reflect a broken connection.
-        return self._sock is not None
+        return self._client_sock is not None
+
+    def accept(self):
+        '''Accept a connection, if one has been made.
+
+        :raises DBGPServerNotFoundError:
+            No connection has been made from the DBGp Server.
+        '''
+
+        inputs, outputs, exceptions = select.select(
+            [self._listening_server], [], [], 1)
+
+        if self._listening_server in inputs:
+            (self._client_sock,
+             self._client_address) = self._listening_server.accept()
+
+            logger.debug('Socket connection established! The other end of '
+                         'the connection is at "%s:%i".' % self._client_address)
+        else:
+            logger.debug('Socket connection failed!')
+            self._listening_server.shutdown(socket.SHUT_RDWR)
+            self._listening_server.close()
+            raise DBGPServerNotFoundError(
+                'No connection was established coming from '
+                '"%(address)s:%(port)i".' % {
+                    'address':self.ADDRESS,
+                    'port':self.PORT,
+                })
+        
+        logger.debug('Closing socket listener.')
+        # Look, we're shutting down before we close! We're being good!
+        self._listening_server.shutdown(socket.SHUT_RDWR)
+        self._listening_server.close()
+
+
+    def listen(self):
+        '''Start listening for the DBGp server.
+        '''
+        logger.debug(
+            'SocketConnection listening on "%(address)s:%(port)i."' % {
+                'address':self.ADDRESS,
+                'port':self.PORT,
+            })
+
+        # Create our socket stream to listen on.
+        self._listening_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Bind the address.
+        self._listening_server.bind(('', self.PORT))
+        self._listening_server.listen(5)
 

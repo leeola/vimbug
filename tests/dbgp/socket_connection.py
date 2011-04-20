@@ -24,7 +24,7 @@ OPTIONS = {
     'debug_file':abspath(join(
         dirname(__file__), '..', 'context', 'no_imports.py')),
     # The port the debug server will be listening on.
-    'pydbgp_port':9000,
+    'pydbgp_port':8990,
     # A port that nothing should be listening on. This will be
     # used for failed connection testing.
     'empty_port':8991,
@@ -44,10 +44,11 @@ def connecting_to_nothing():
 @socket_connection.context
 def create_socket():
     '''Create context needed for the socket tests.'''
+    con = SocketConnection(port=OPTIONS['pydbgp_port'])
     try:
-        yield SocketConnection(port=OPTIONS['pydbgp_port'])
+        yield con
     finally:
-        pass
+        con.close()
 
 @socket_connection.test
 def connect_to_pydbg(con):

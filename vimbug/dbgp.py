@@ -71,6 +71,15 @@ class SocketConnection(object):
         '''Call close on this connection.'''
         self.close()
 
+    def close(self):
+        '''Check both of the sockets and close them if active.'''
+        
+        if self._client_sock is not None:
+            self._client_sock.close()
+
+        if self._listening_server is not None:
+            self._listening_server.close()
+
     def connected(self):
         '''Check if this object is connected to the DBGp Server.
 
@@ -99,7 +108,6 @@ class SocketConnection(object):
                          'the connection is at "%s:%i".' % self._client_address)
         else:
             logger.debug('Socket connection failed!')
-            self._listening_server.shutdown(socket.SHUT_RDWR)
             self._listening_server.close()
             raise DBGPServerNotFoundError(
                 'No connection was established coming from '
@@ -109,8 +117,6 @@ class SocketConnection(object):
                 })
         
         logger.debug('Closing socket listener.')
-        # Look, we're shutting down before we close! We're being good!
-        self._listening_server.shutdown(socket.SHUT_RDWR)
         self._listening_server.close()
 
 

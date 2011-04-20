@@ -76,6 +76,12 @@ class Socket(object):
         # connected or not.
         return self._socket is not None
 
+class SocketListener(object):
+    '''A simple socket wrapper designed to make listening and accepting
+    connections cleaner **in this context**.
+    '''
+    pass
+
 class SocketConnection(object):
     '''A simple socket class designed to handle the socket mojo with the DBGp
     in mind.

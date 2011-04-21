@@ -1,8 +1,8 @@
 
 from attest import Tests
-from tests.dbgp.socket import socket
+from tests.dbgp.socket_ import socktest
 
 tests = Tests([
-    socket,
+    socktest,
 ])
 

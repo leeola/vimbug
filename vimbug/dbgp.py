@@ -49,77 +49,22 @@ class Socket(object):
         :param socket_:
             An instance of a `socket.socket()` like object.
         '''
+        if socket_ is None:
+            socket_ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        #: True if a connection has been made. False otherwise.
+        self._connected = False
         #: An instance of a `socket.socket()` like object.
         self._socket = socket_
 
-    def connect(self, host='localhost', port=9000):
-        '''Connect to a socket at the given address.
-
-        :param host:
-            The host to connect to.
-        :param port:
-            The port to connect to the host on.
-
-        :raises SocketConnectionFailedError:
-            Raised if the socket connection fails for some reason. Go figure..
-            Yea.. not so descriptive.. i'm sorry :/
-        '''
-        raise NotImplementedError()
-
-    def connected(self):
-        '''Check whether or not this socket is connected.
-
-        :returns:
-            True if connected. False otherwise.
-        '''
-        # Eventually we need to somehow check if the socket is actually
-        # connected or not.
-        return self._socket is not None
-
-class SocketListener(object):
-    '''A simple socket wrapper designed to make listening and accepting
-    connections cleaner **in this context**.
-    '''
-    pass
-
-class SocketConnection(object):
-    '''A simple socket class designed to handle the socket mojo with the DBGp
-    in mind.
-    '''
-
-    def __init__(self, address='localhost', port=9000):
-        '''
-        :param address:
-            The address of the DBGp Server. Defaults to "localhost"
-        :param port:
-            The port that the DBGp server is set to. Defaults to 9000 (the
-            protocol default too)
-        '''
-        #: The socket object for IO data with the DBGp server. None if 
-        #: no connection has been made.
-        self._client_sock = None
-        #: The socket used to listen for the initial server connection.
-        self._listening_server = None
-        #: The server address
-        self.ADDRESS = address
-        #: The port the server is listening on.
-        self.PORT = port
-
-    def __enter__(self):
-        '''Setup code for this connection object.'''
-        # I don't think anything needs to be done here. Calling
-        # self._client_sock.__enter__() may be a possibility though.
-        pass
-
-    def __exit__(self):
-        '''Call close on this connection.'''
-        self.close()
-
     def _receive(self, length):
-        '''Receive a set number of characters from the client sock.
+        '''Receive a set number of characters from the socket.
 
         :param length:
             The length of the data to read.
+
+        :raises EOFError:
+            Raised if the socket receives no more data.
         '''
         # We will store our data by appending each recv result to this.
         data = ''
@@ -128,7 +73,7 @@ class SocketConnection(object):
             # While we still want to read data.
 
             # Get the sockets recv.
-            buffer = self._client_sock.recv(length)
+            buffer = self._socket.recv(length)
 
             if buffer == '':
                 # If we receive nothing, the connection has closed on the
@@ -142,16 +87,15 @@ class SocketConnection(object):
             # Ensure we read as much as we intended to read by subtracting
             # what we *actually* read from the original intention.
             length -= len(buffer)
+
         return data
 
     def _receive_length(self):
         '''Read the length of the socket buffer by getting a sequence of
         integers found at the beginning of the buffer.
 
-        :raises NotImplementedError:
-            Raised if `self._client_sock` is None.
         :raises EOFError:
-            Raised if the client sock receives no more data.
+            Raised if the sock receives no more data.
         :raises Exception:
             Raised if an unexpected result was returned from the server.
         '''
@@ -160,17 +104,8 @@ class SocketConnection(object):
         chars = ''
 
         while True:
-            if self._client_sock is None:
-                # If the client sock is None.. well, we should raise some
-                # type of error here.. probably custom.. to signal that the
-                # socket has not been put up yet. For now we'll raise not 
-                # implemented.
-                raise NotImplementedError(
-                    'Read length was attempted before the client socket was '
-                    'established. A proper error has not been implemented..')
-            
             # Now, get a char from the socket.
-            c = self._client_sock.recv(1)
+            c = self._socket.recv(1)
 
             if c == '':
                 # If c is empty, the connection has been closed. So we need
@@ -195,77 +130,145 @@ class SocketConnection(object):
                 # isn't right.
                 raise Exception(
                     'An unexpected result of "%s" was received from the '
-                    'client socket.')
+                    'client socket.' % c)
         
         # Not much else to do at this point. Return our length! If length
         # doesn't exist here, we have a bug, so let's not worry about it.
         return length
 
     def close(self):
-        '''Check both of the sockets and close them if active.'''
-        
-        if self._client_sock is not None:
-            self._client_sock.close()
+        '''Close the socket connection.'''
+        self._socket.close()
+        self._connected = False
 
-        if self._listening_server is not None:
-            self._listening_server.close()
+    def connect(self, hostname='localhost', port=9000):
+        '''Connect to a socket at the given address.
+
+        :param hostname:
+            The hostname to connect to.
+        :param port:
+            The port to connect to the host on.
+        '''
+        try:
+            self._socket.connect((hostname, port))
+        except socket.error, error:
+            # We're just letting any errors bubble up from this. No reason
+            # currently to try and catch them all.
+            raise error
+        else:
+            self._connected = True
 
     def connected(self):
-        '''Check if this object is connected to the DBGp Server.
+        '''Check whether or not this socket is connected. Note that this is
+        mostly just checking if the connection has ever been connected. The
+        connection on the other end may have died, and you won't know until
+        a read fails.
 
         :returns:
-            True if a socket connection has been established, False otherwise.
+            True if connected. False otherwise.
         '''
-        # Eventually i'll need to set this to actually check the connection.
-        # so if the DBGp server drops, this will reflect a broken connection.
-        return self._client_sock is not None
+        return self._connected
+
+    def receive(self):
+        '''Read from the socket connection.'''
+        return self._receive(self._receive_length())
+
+class SocketConnectionFailedError(Exception):
+    '''Raised if a socket was unable to connect.'''
+    pass
+
+class SocketListener(object):
+    '''A simple socket wrapper designed to make listening and accepting
+    connections cleaner **in this context**.
+    '''
+
+    
+    def __init__(self):
+        ''''''
+        #: The listening socket.
+        self._listening_socket = None
+        #: The data socket
+        self.socket = None
+
+    def __enter__(self):
+        '''Setup code for this connection object.'''
+        # I don't think anything needs to be done here. Calling
+        # self._listening_socket.__enter__() may be a possibility though.
+        pass
+
+    def __exit__(self):
+        '''Call close on this connection.'''
+        self.close()
 
     def accept(self):
         '''Accept a connection, if one has been made.
 
-        :raises DBGPServerNotFoundError:
-            No connection has been made from the DBGp Server.
+        :returns:
+            A socket connection that was made. None, if no socket connections
+            were established.
         '''
 
         inputs, outputs, exceptions = select.select(
-            [self._listening_server], [], [], 1)
+            [self._listening_socket], [], [], 1)
 
-        if self._listening_server in inputs:
-            (self._client_sock,
-             self._client_address) = self._listening_server.accept()
+        if self._listening_socket in inputs:
+            (client_socket,
+             client_address) = self._listening_socket.accept()
+   
+            self.socket = Socket(client_socket)
+            # Here we need to make sure and tell the wrapper that it is connected.
+            self.socket._connected = True
 
-            logger.debug('Socket connection established! The other end of '
-                         'the connection is at "%s:%i".' % self._client_address)
+            (self._client_hostname, self._client_port) = client_address
+
+            logger.debug('SocketListener connection established! The other '
+                         'end of the connection is '
+                         'at "%s:%i".' % client_address)
         else:
-            logger.debug('Socket connection failed!')
-            self._listening_server.close()
-            raise DBGPServerNotFoundError(
-                'No connection was established coming from '
-                '"%(address)s:%(port)i".' % {
-                    'address':self.ADDRESS,
-                    'port':self.PORT,
-                })
-        
+            logger.debug('SocketListener had no connections made.')
+
+        # Now we need to close *only* the listener. Since this could have been
+        # a successful connection.
+        self._listening_socket.close()
+
+    def close(self):
+        '''Close the socket connection.'''
+
         logger.debug('Closing socket listener.')
-        self._listening_server.close()
 
+        if self._listening_socket is not None:
+            self._listening_socket.close()
 
-    def listen(self):
-        '''Start listening for the DBGp server.
+        if self.socket is not None:
+            self.socket.close()
+    
+    def connected(self):
+        '''Check whether or not this socket is connected.
+
+        :returns:
+            True if connected. False otherwise.
+        '''
+        if self.socket is not None:
+            return self.socket.connected()
+        else:
+            return False
+
+    def listen(self, hostname='localhost', port=9000):
+        '''Start listening for a connection.
         '''
         logger.debug(
-            'SocketConnection listening on "%(address)s:%(port)i."' % {
-                'address':self.ADDRESS,
-                'port':self.PORT,
+            'SocketListener listening on "%(hostname)s:%(port)i."' % {
+                'hostname':hostname,
+                'port':port,
             })
 
         # Create our socket stream to listen on.
-        self._listening_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # Bind the address.
-        self._listening_server.bind(('', self.PORT))
-        self._listening_server.listen(5)
+        self._listening_socket.bind((hostname, port))
+        self._listening_socket.listen(1)
 
-    def read(self):
-        '''Read from the socket connection.'''
-        return self._receive(self._receive_length())
+class SocketNotEstablishedError(Exception):
+    '''Raised if a socket was used before it was connected/established.'''
+    pass
 

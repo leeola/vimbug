@@ -173,6 +173,15 @@ class Socket(object):
         '''Read from the socket connection.'''
         return self._receive(self._receive_length())
 
+    def send(self, data):
+        '''Send data to the server.
+
+        :param data:
+            The data to send.
+        '''
+        data = '%s\0%s' % (len(data), data)
+        self._socket.send(data)
+
 class SocketConnectionFailedError(Exception):
     '''Raised if a socket was unable to connect.'''
     pass

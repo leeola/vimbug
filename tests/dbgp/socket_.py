@@ -30,6 +30,10 @@ def create_sockets():
     client = Socket()
     listener = SocketListener()
 
+    listener.listen(port=OPTIONS['main_port'])
+    client.connect(port=OPTIONS['main_port'])
+    listener.accept()
+    
     try:
         yield (client, listener)
     finally:
@@ -49,11 +53,6 @@ def failing_connection():
 @socktest.test
 def successful_connection(client, listener):
     '''Successfully connect to the listener.'''
-    listener.listen(port=OPTIONS['main_port'])
-    client.connect(port=OPTIONS['main_port'])
-    listener.accept()
-
-    # Now check both sockets to make sure they're connected.
     assert client.connected() == True
     assert listener.connected() == True
 
@@ -75,6 +74,7 @@ def close_connection(client, listener):
     '''Close the connection, and make sure it's closed.'''
 
     client.close()
+    listener.close()
     assert client.connected() == False
     assert listener.connected() == False
 

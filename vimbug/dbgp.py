@@ -28,15 +28,47 @@ class DBGP:
     pass
 
 class DBGPConnection:
-    '''A class which manages communication to the DBGp server by translating
-    DBGp commands given to it and with the aid of :class:`SocketConnection`,
-    recieve or send commands/data with the DBGp Server.
     '''
-    pass
+    '''
+
+
+    def __init__(self, starter, hostname='localhost', port=9000):
+        '''
+        :param starter:
+            When a debug session is needed, this object is called *(as a
+            function call)*.
+        :param hostname:
+            The hostname to use for this connection.
+        :param port:
+            The port to use for this connection.
+        '''
+        raise NotImplementedError()
+
 
 class DBGPServerNotFoundError(Exception):
     '''The DBGp Server did not connect to a listening client.'''
     pass
+
+
+class PyDBGPStarter(object):
+    '''When an instance is called, initialize a pydbgp server.'''
+
+
+    def __init__(self, url, hostname='localhost', port=9000, *args, **kwargs):
+        '''
+        :param url:
+            The url of the python file.
+        :param hostname:
+            The hostname to use for this connection.
+        :param port:
+            The port to use for this connection.
+        '''
+        raise NotImplementedError()
+
+    def __call__(self):
+        '''Start a pydbgp.py subprocess.'''
+        raise NotImplementedError()
+
 
 class Socket(object):
     '''A simple socket wrapper designed to make dealing with sockets cleaner,
@@ -182,9 +214,11 @@ class Socket(object):
         data = '%s\0%s' % (len(data), data)
         self._socket.send(data)
 
+
 class SocketConnectionFailedError(Exception):
     '''Raised if a socket was unable to connect.'''
     pass
+
 
 class SocketListener(object):
     '''A simple socket wrapper designed to make listening and accepting
@@ -276,6 +310,7 @@ class SocketListener(object):
         # Bind the address.
         self._listening_socket.bind((hostname, port))
         self._listening_socket.listen(1)
+
 
 class SocketNotEstablishedError(Exception):
     '''Raised if a socket was used before it was connected/established.'''

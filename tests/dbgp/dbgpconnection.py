@@ -6,6 +6,7 @@
     :copyright: (c) 2011 by Lee Olayvar
     :license: MIT, see LICENSE for more details.
 '''
+from os.path import abspath, dirname, join
 
 from attest import Tests, raises
 
@@ -20,15 +21,18 @@ OPTIONS = {
     'pydbgp_port':8990,
 }
 
+# Our test object
 dbgpcon_test = Tests()
 
-@dbgpcon_test.context
-def setup_context():
-    pass
+# The dbgp connection we will mostly be working with.
+dbgpcon = None
 
 @dbgpcon_test.test
-def accept_pydbgp():
+def connect_to_pydbgp():
     '''Accept a pydbgp connection.'''
+    global dbgpcon
+
+    # Create the connection object.
     dbgpcon = DBGPConnection(
         port=OPTIONS['pydbgp_port'],
         starter=PyDBGPStarter(
@@ -37,4 +41,8 @@ def accept_pydbgp():
         ),
     )
 
-    
+    # Connect!
+    dbgpcon.connect()
+
+    assert dbgpcon.connected() == True
+

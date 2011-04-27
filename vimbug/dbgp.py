@@ -12,6 +12,7 @@
 
 import base64
 import socket, select
+import subprocess
 import logging
 
 from lxml import etree
@@ -42,7 +43,89 @@ class DBGPConnection:
         :param port:
             The port to use for this connection.
         '''
-        raise NotImplementedError()
+        #: The hostname which will be listening.
+        self._hostname = hostname
+        #: The port which will be listening on.
+        self._port = port
+        #: The object called when the IDE is listening for a connection from a
+        #: DBGp Server.
+        self._starter = starter
+
+        
+        #: A listener for incoming DBGp Server connections.
+        self._listener = SocketListener()
+   
+    def connect(self):
+       '''Start listening for an ide connection, and call this connections
+       starter object, if any.
+       '''
+       # Start listening for connections.
+       self._listener.listen(hostname=self._hostname, port=self._port)
+       # Call the starter.
+       self._starter()
+       # Accept any connections
+       self._listener.accept()
+
+       self._connected = self._listener.connected()
+
+    def connected(self):
+       '''Check whether or not a connection is active with this DBGPConnection
+       '''
+       return self._connected
+
+    def receive(self):
+        '''Receive whatever data is in queue and convert it to an etree XML
+        object.
+
+        :returns:
+            An `lxml.etree.Element` object.
+        '''
+        return etree.fromstring(self.receive_string())
+
+    def receive_string(self):
+        '''Receive whatever data is in queue and return it.
+
+        :returns:
+            Any data in the queue.
+        '''
+        return self._listener.socket.receive()
+
+    def send(self, command, data=None, **kwargs):
+        '''Send a command to the DBGp Server.
+
+        :param command:
+            The command to send to the DBGp Server.
+        :param data:
+            Any additional data to pass with the command. An example of this
+            would be code for an expression.
+        :param **kwargs:
+            All additional keyword arguments will be appended to the
+            command string in the format of '-key value'.
+        '''
+        # Start by assigning the command to the command string.
+        command_string = command
+        # Now append each item to the command string.
+        for key, value in kwargs.items():
+            command_string = '%(orig_str)s -%(key)s %(value)s' % {
+                'orig_str':command_string,
+                'key':key,
+                'value':value,
+            }
+        # And if there is any data, add that to the command string in base64
+        # format.
+        if data is not None:
+            # Note that we are removing the last character here as it
+            # is a return character for some reason. We don't want this.
+            encoded_data = base64.encodestring(data)[:-1]
+            command_string = '-l %(data_len)s %(orig_str)s -- %(data)s' % {
+                'data_len':len(encoded_data),
+                'orig_str':original_string,
+                'data':encoded_data,
+            }
+
+        # Lastly, log our send and send it!
+        logger.debug('DBGPConnection Send: %s' % command_string)
+        self._listener.socket.send(command_string)
 
 
 class DBGPServerNotFoundError(Exception):
@@ -54,21 +137,31 @@ class PyDBGPStarter(object):
     '''When an instance is called, initialize a pydbgp server.'''
 
 
-    def __init__(self, url, hostname='localhost', port=9000, *args, **kwargs):
+    def __init__(self, url, file_args=None, hostname='localhost', port=9000):
         '''
         :param url:
             The url of the python file.
+        :param file_args:
+            Arguments passed to the file. None by default.
         :param hostname:
             The hostname to use for this connection.
         :param port:
             The port to use for this connection.
         '''
-        raise NotImplementedError()
+        self.url = url
+        if file_args is None:
+            file_args = tuple()
+        self.file_args = file_args
+        self.hostname = hostname
+        self.port = port
 
     def __call__(self):
         '''Start a pydbgp.py subprocess.'''
-        raise NotImplementedError()
-
+        address = '%s:%s' % (self.hostname, self.port)
+        self._pydbgp_proc = subprocess.Popen(
+            ('pydbgp.py', '-d', address, self.url) + self.file_args,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
 
 class Socket(object):
     '''A simple socket wrapper designed to make dealing with sockets cleaner,

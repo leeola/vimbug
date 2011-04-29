@@ -250,6 +250,8 @@ class Socket(object):
             elif c == '\0':
                 # If \0 is returned we have reached the end of the length
                 # characters. So return what we have gathered thus far in.
+                if chars == '':
+                    return 0
                 length = int(chars)
                 # Don't forget to break the loop!
                 break

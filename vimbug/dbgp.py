@@ -78,9 +78,13 @@ class DBGPConnection:
         object.
 
         :returns:
-            An `lxml.etree.Element` object.
+            An `lxml.etree.Element` object, or `None` if no data is received.
         '''
-        return etree.fromstring(self.receive_string())
+        data = self.receive_string()
+        if data is not None:
+            return etree.fromstring(data)
+        else:
+            return None
 
     def receive_string(self):
         '''Receive whatever data is in queue and return it.
@@ -230,7 +234,17 @@ class Socket(object):
 
         while True:
             # Now, get a char from the socket.
-            c = self._socket.recv(1)
+
+            # Note that this whole section badly needs a rewrite..
+            # It's just.. ugly. That's what i get for modifying code rather
+            # than writing from scratch.
+            # -- Mark Twain
+            reads, writes, errs = select.select([self._socket], [], [], 0)
+
+            if self._socket in reads:
+                c = self._socket.recv(1)
+            else:
+                return 0
 
             if c == '':
                 # If c is empty, the connection has been closed. So we need
@@ -240,6 +254,8 @@ class Socket(object):
             elif c == '\0':
                 # If \0 is returned we have reached the end of the length
                 # characters. So return what we have gathered thus far in.
+                if chars == '':
+                    return 0
                 length = int(chars)
                 # Don't forget to break the loop!
                 break

@@ -230,7 +230,17 @@ class Socket(object):
 
         while True:
             # Now, get a char from the socket.
-            c = self._socket.recv(1)
+
+            # Note that this whole section badly needs a rewrite..
+            # It's just.. ugly. That's what i get for modifying code rather
+            # than writing from scratch.
+            # -- Mark Twain
+            reads, writes, errs = select.select([self._socket], [], [], 0)
+
+            if self._socket in reads:
+                c = self._socket.recv(1)
+            else:
+                return 0
 
             if c == '':
                 # If c is empty, the connection has been closed. So we need

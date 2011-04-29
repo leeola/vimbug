@@ -78,9 +78,13 @@ class DBGPConnection:
         object.
 
         :returns:
-            An `lxml.etree.Element` object.
+            An `lxml.etree.Element` object, or `None` if no data is received.
         '''
-        return etree.fromstring(self.receive_string())
+        data = self.receive_string()
+        if data is not None:
+            return etree.fromstring(data)
+        else:
+            return None
 
     def receive_string(self):
         '''Receive whatever data is in queue and return it.

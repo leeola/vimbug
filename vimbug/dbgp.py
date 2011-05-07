@@ -290,7 +290,7 @@ class Socket(object):
             # It's just.. ugly. That's what i get for modifying code rather
             # than writing from scratch.
             # -- Mark Twain
-            reads, writes, errs = select.select([self._socket], [], [], 0)
+            reads, writes, errs = select.select([self._socket], [], [], 1)
 
             if self._socket in reads:
                 c = self._socket.recv(1)

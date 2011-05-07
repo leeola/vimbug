@@ -63,10 +63,12 @@ def echo_data(client, listener):
     # Just a group of data to send.
     datas = [
         'Hello World',
+        'The world says Hello!',
+        'I don\'t know.. what do you want me to say.',
     ]
 
     for data in datas:
-        client.send(data)
+        client.send(data, prefix_length=True)
         assert listener.socket.receive() == data
 
 @socktest.test

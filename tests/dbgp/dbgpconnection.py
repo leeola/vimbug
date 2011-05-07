@@ -24,6 +24,15 @@ OPTIONS = {
 # Our test object
 dbgpcon_test = Tests()
 
+
+# ====
+# Note
+# ====
+# We are using globals to store our states since Attest, via the current
+# version 0.5, has no way to share contexts between tests. Currently each
+# test is given a copy of the original context. Not so great for our socket
+# connection.
+
 # The dbgp connection we will mostly be working with.
 dbgpcon = None
 
@@ -45,4 +54,13 @@ def connect_to_pydbgp():
     dbgpcon.connect()
 
     assert dbgpcon.connected() == True
+
+@dbgpcon_test.test
+def disconnect_pydbgp():
+    '''Disconnect the connection.'''
+    global dbgpcon
+
+    dbgpcon.disconnect()
+
+    assert dbgpcon.connected() == False
 

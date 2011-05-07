@@ -54,6 +54,9 @@ class DBGPConnection:
         
         #: A listener for incoming DBGp Server connections.
         self._listener = SocketListener()
+        #: A simple integer which is increased with each send to the DBGp
+        #: Server.
+        self._transaction_id_index = 0
    
     def connect(self):
        '''Start listening for an ide connection, and call this connections
@@ -73,6 +76,19 @@ class DBGPConnection:
        '''
        return self._connected
 
+    def disconnect(self, stop=True):
+        '''Close the DBGp Socket Connection.
+        
+        :param stop:
+            Send the stop command to the DBGp Server before disconnecting the
+            connection.
+        '''
+        if stop:
+            self.send('stop')
+
+        self._listener.close()
+        self._connected = False
+
     def receive(self):
         '''Receive whatever data is in queue and convert it to an etree XML
         object.
@@ -81,7 +97,7 @@ class DBGPConnection:
             An `lxml.etree.Element` object, or `None` if no data is received.
         '''
         data = self.receive_string()
-        if data is not None:
+        if data is None:
             return etree.fromstring(data)
         else:
             return None
@@ -94,7 +110,8 @@ class DBGPConnection:
         '''
         return self._listener.socket.receive()
 
-    def send(self, command, data=None, **kwargs):
+    def send(self, command, data=None, transaction_id=None, args=None,
+             kwargs=None):
         '''Send a command to the DBGp Server.
 
         :param command:
@@ -102,12 +119,40 @@ class DBGPConnection:
         :param data:
             Any additional data to pass with the command. An example of this
             would be code for an expression.
-        :param **kwargs:
-            All additional keyword arguments will be appended to the
+        :param transaction_id:
+            If supplied, this transaction_id is used. If None, the
+            DBGPConnection object's internal id's are used.
+        :param args:
+            A list of arguments which will each be given to the command
+            string.
+        :param kwargs:
+            A dict of kwargs which will each be appended to the
             command string in the format of '-key value'.
         '''
+        if args is None:
+            args = []
+        if kwargs is None:
+            kwargs = {}
+
         # Start by assigning the command to the command string.
         command_string = command
+
+        # If we need, generate our transaction_id
+        if transaction_id is None:
+            self._transaction_id_index += 1
+            transaction_id = self._transaction_id_index
+
+        # Now let's add a transaction id argument.
+        # Note that if the key already exists, this function is most likely
+        # being used wrong. But if the DBGp Server accepts whatever value -i
+        # currently is.. who cares?
+        if not kwargs.has_key('i'):
+            kwargs['i'] = transaction_id
+
+        # Add each item in args to the command string.
+        for arg in args:
+            command_string += ' %s' % arg
+
         # Now append each item to the command string.
         for key, value in kwargs.items():
             command_string = '%(orig_str)s -%(key)s %(value)s' % {
@@ -121,11 +166,14 @@ class DBGPConnection:
             # Note that we are removing the last character here as it
             # is a return character for some reason. We don't want this.
             encoded_data = base64.encodestring(data)[:-1]
-            command_string = '-l %(data_len)s %(orig_str)s -- %(data)s' % {
+            command_string = '%(orig_str)s -l %(data_len)s -- %(data)s' % {
                 'data_len':len(encoded_data),
-                'orig_str':original_string,
+                'orig_str':command_string,
                 'data':encoded_data,
             }
+
+        # Add our ending Null!
+        command_string += '\0'
 
         # Lastly, log our send and send it!
         logger.debug('DBGPConnection Send: %s' % command_string)
@@ -217,7 +265,10 @@ class Socket(object):
             # what we *actually* read from the original intention.
             length -= len(buffer)
 
-        return data
+        if data:
+            return data
+        else:
+            return None
 
     def _receive_length(self):
         '''Read the length of the socket buffer by getting a sequence of
@@ -314,13 +365,21 @@ class Socket(object):
         '''Read from the socket connection.'''
         return self._receive(self._receive_length())
 
-    def send(self, data):
+    def send(self, data, prefix_length=False, prefix_separator='\0'):
         '''Send data to the server.
 
         :param data:
             The data to send.
+        :param prefix_length:
+            If True, this will prefix the data with the length of the data,
+            followed by the prefix chatacter.
+        :param prefix_separator:
+            If prefix_length is True, this string will be placed between the
+            length and the data.
         '''
-        data = '%s\0%s' % (len(data), data)
+        if prefix_length:
+            data = ''.join((str(len(data)), prefix_separator, data))
+
         self._socket.send(data)
 
 

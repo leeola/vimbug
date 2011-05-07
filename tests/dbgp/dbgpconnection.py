@@ -43,10 +43,10 @@ def connect_pydbgp():
 
     # Create the connection object.
     dbgpcon = DBGPConnection(
+        OPTIONS['debug_file'],
         port=OPTIONS['pydbgp_port'],
         starter=PyDBGPStarter(
             port=OPTIONS['pydbgp_port'],
-            url=OPTIONS['debug_file'],
         ),
     )
 

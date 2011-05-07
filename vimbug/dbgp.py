@@ -73,6 +73,12 @@ class DBGPConnection:
        '''
        return self._connected
 
+    def disconnect(self):
+        '''Disconnect the DBGp Connection.'''
+        self._listener.close()
+        self._listener._socket.close()
+        self._connected = False
+
     def receive(self):
         '''Receive whatever data is in queue and convert it to an etree XML
         object.

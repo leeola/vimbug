@@ -59,22 +59,23 @@ class DBGPConnection:
         self._transaction_id_index = 0
    
     def connect(self):
-       '''Start listening for an ide connection, and call this connections
-       starter object, if any.
-       '''
-       # Start listening for connections.
-       self._listener.listen(hostname=self._hostname, port=self._port)
-       # Call the starter.
-       self._starter()
-       # Accept any connections
-       self._listener.accept()
+        
+        '''Start listening for an ide connection, and call this connections
+        starter object, if any.
+        '''
+        # Start listening for connections.
+        self._listener.listen(hostname=self._hostname, port=self._port)
+        # Call the starter.
+        self._starter()
+        # Accept any connections
+        self._listener.accept()
 
-       self._connected = self._listener.connected()
+        self._connected = self._listener.connected()
 
     def connected(self):
-       '''Check whether or not a connection is active with this DBGPConnection
-       '''
-       return self._connected
+        '''Check whether or not a connection is active with this DBGPConnection
+        '''
+        return self._connected
 
     def disconnect(self, stop=True):
         '''Close the DBGp Socket Connection.

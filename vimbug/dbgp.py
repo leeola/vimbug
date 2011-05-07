@@ -26,25 +26,123 @@ class DBGP:
 
     Communication itself is handled by :class:`DBGPConnection`.
     '''
-    pass
+    
+    def __init__(self, host='localhost', port=9000, starter=None,
+                relative_uri=None):
+        '''
+        :param host:
+            The host of the DBGp Server.
+        :param port:
+            The port of the DBGp Server.
+        :param starter:
+            A callable which will be called when this class *(The IDE in DBGp
+            terminology)* is listening for the DBGp Server.
+        :param relative_uri:
+            A uri, generally a file path, to define future `set_debug()`
+            calls with relative file paths.
+
+            For example, if relative_uri is set to `/home/user/pyfiles`, then
+            a call such as `set_debug('my_file.py', relative=True)` would
+            look for a file in the location of
+            `/home/user/pyfiles/my_file.py`.
+
+            Note that if this is None, the location of the current python
+            working directory.
+        '''
+
+        #: The host of the DBGp Server.
+        self._host = host
+        #: The port of the DBGp Server.
+        self._port = port
+        #: The starter callable.
+        self._starter = starter
+        #: The relative uri to use if relative paths are desired.
+        self._relative_uri = relative_uri
+        if relative_uri is None:
+            self._relative_uri = os.path.abspath('.')
+
+        #: The DBGPConnection object.
+        self._dbgpconnection = None
+        #: The debug uri we want to debug.
+        self._debug_uri = None
+
+    def connect_debug(self):
+        '''Connect the debug process. When called, this function will start
+        listening for a connection for a DBGp Server. While it is listening,
+        and if one exists, the `self._starter` is called with the uri
+        supplied.
+        '''
+        if self.established():
+            raise NotImplementedError()
+
+        self._dbgpconnection = DBGPConnection(
+            self._debug_uri,
+            host=self._host,
+            port=self._port,
+            starter=self._starter,
+        )
+
+    def connected(self):
+        '''Whether or not we have an established, live DBGPConnection object.
+        '''
+        if self._dbgpconnection is None:
+            return False
+        else:
+            return self._dbgpconnection.connected()
+    
+    def established(self):
+        '''Whether or not we have an existing DBGPConnection object. If we do,
+        we either have an active DBGp Session, or we intend to.
+        '''
+        return self._dbgpconnection is not None
+
+    def set_debug(self, uri, relative=False):
+        '''Set the debug file to use.
+
+        :param uri:
+            The uri of the file/url/whatever. This must be absolute, unless
+            relative is specified.
+        :param relative:
+            Look for the uri based on a relative uri starting from the uri
+            given to `DBGP(relative_uri=None)`
+        '''
+        if self.established():
+            raise NotImplementedError()
+
+        abspath = os.path.abspath
+        join = os.path.join
+
+        if relative:
+            self._debug_uri = abspath(join(self._relative_uri, uri))
+        else:
+            self._debug_uri = uri
+
+    def run(self):
+        '''the dbgp run command.'''
+        pass
+
 
 class DBGPConnection:
     '''
     '''
 
 
-    def __init__(self, starter, hostname='localhost', port=9000):
+    def __init__(self, debug_uri, host='localhost', port=9000, starter=None):
         '''
-        :param starter:
-            When a debug session is needed, this object is called *(as a
-            function call)*.
+        :param debug_uri:
+            The debug uri given to the starter to debug.
         :param hostname:
-            The hostname to use for this connection.
+            the hostname to use for this connection.
         :param port:
-            The port to use for this connection.
+            the port to use for this connection.
+        :param starter:
+            when a debug session is needed, this object is called *(as a
+            function call)*.
         '''
+        #: The debug uri.
+        self._debug_uri = debug_uri
         #: The hostname which will be listening.
-        self._hostname = hostname
+        self._hostname = host
         #: The port which will be listening on.
         self._port = port
         #: The object called when the IDE is listening for a connection from a
@@ -72,7 +170,8 @@ class DBGPConnection:
         # Start listening for connections.
         self._listener.listen(hostname=self._hostname, port=self._port)
         # Call the starter.
-        self._starter()
+        if self._starter is not None:
+            self._starter(self._debug_uri)
         # Accept any connections
         self._listener.accept()
 
@@ -206,10 +305,8 @@ class PyDBGPStarter(object):
     '''When an instance is called, initialize a pydbgp server.'''
 
 
-    def __init__(self, url, file_args=None, hostname='localhost', port=9000):
+    def __init__(self, file_args=None, hostname='localhost', port=9000):
         '''
-        :param url:
-            The url of the python file.
         :param file_args:
             Arguments passed to the file. None by default.
         :param hostname:
@@ -217,18 +314,21 @@ class PyDBGPStarter(object):
         :param port:
             The port to use for this connection.
         '''
-        self.url = url
         if file_args is None:
             file_args = tuple()
         self.file_args = file_args
         self.hostname = hostname
         self.port = port
 
-    def __call__(self):
-        '''Start a pydbgp.py subprocess.'''
+    def __call__(self, debug_file):
+        '''start a pydbgp.py subprocess.
+        
+        :param debug_file:
+            The file path of the .. file to debug.
+        '''
         address = '%s:%s' % (self.hostname, self.port)
         self._pydbgp_proc = subprocess.Popen(
-            ('pydbgp.py', '-d', address, self.url) + self.file_args,
+            ('pydbgp.py', '-d', address, debug_file) + self.file_args,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
 

@@ -55,3 +55,12 @@ def connect_to_pydbgp():
 
     assert dbgpcon.connected() == True
 
+@dbgpcon_test.test
+def disconnect_pydbgp():
+    '''Disconnect the connection.'''
+    global dbgpcon
+
+    dbgpcon.disconnect()
+
+    assert dbgpcon.connected() == False
+

@@ -56,6 +56,15 @@ def connect_pydbgp():
     assert dbgpcon.connected() == True
 
 @dbgpcon_test.test
+def basic_send_receive():
+    '''Send a status command, make sure we get a response.'''
+    global dbgpcon
+
+    dbgpcon.send('status')
+
+    assert dbgpcon.receive() is not None 
+
+@dbgpcon_test.test
 def disconnect_pydbgp():
     '''Disconnect the connection.'''
     global dbgpcon

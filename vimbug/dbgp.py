@@ -97,7 +97,7 @@ class DBGPConnection:
             An `lxml.etree.Element` object, or `None` if no data is received.
         '''
         data = self.receive_string()
-        if data is None:
+        if data is not None:
             return etree.fromstring(data)
         else:
             return None

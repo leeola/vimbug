@@ -9,7 +9,7 @@
     :copyright: (c) 2011 by Lee Olayvar.
     :license: MIT, see LICENSE for more details.
 '''
-
+import os
 import base64
 import socket, select
 import subprocess

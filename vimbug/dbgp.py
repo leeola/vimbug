@@ -9,7 +9,7 @@
     :copyright: (c) 2011 by Lee Olayvar.
     :license: MIT, see LICENSE for more details.
 '''
-
+import os
 import base64
 import socket, select
 import subprocess
@@ -72,7 +72,7 @@ class DBGP:
         and if one exists, the `self._starter` is called with the uri
         supplied.
         '''
-        if self.established():
+        if self.connection_exists():
             raise NotImplementedError()
 
         self._dbgpconnection = DBGPConnection(
@@ -82,6 +82,12 @@ class DBGP:
             starter=self._starter,
         )
 
+    def connection_exists(self):
+        '''Whether or not we have an existing DBGPConnection object. If we do,
+        we either have an active DBGp Session, or we intend to.
+        '''
+        return self._dbgpconnection is not None
+
     def connected(self):
         '''Whether or not we have an established, live DBGPConnection object.
         '''
@@ -90,12 +96,6 @@ class DBGP:
         else:
             return self._dbgpconnection.connected()
     
-    def established(self):
-        '''Whether or not we have an existing DBGPConnection object. If we do,
-        we either have an active DBGp Session, or we intend to.
-        '''
-        return self._dbgpconnection is not None
-
     def set_debug(self, uri, relative=False):
         '''Set the debug file to use.
 
@@ -106,7 +106,7 @@ class DBGP:
             Look for the uri based on a relative uri starting from the uri
             given to `DBGP(relative_uri=None)`
         '''
-        if self.established():
+        if self.connection_exists():
             raise NotImplementedError()
 
         abspath = os.path.abspath

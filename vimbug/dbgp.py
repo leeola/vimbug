@@ -192,12 +192,9 @@ class DBGPConnection:
                 'data':encoded_data,
             }
 
-        # Add our ending Null!
-        command_string += '\0'
-
         # Lastly, log our send and send it!
         logger.debug('DBGPConnection Send: %s' % command_string)
-        self._listener.socket.send(command_string)
+        self._listener.socket.send(command_string, suffix='\0')
 
 
 class DBGPServerNotFoundError(Exception):
@@ -266,6 +263,11 @@ class Socket(object):
         # We will store our data by appending each recv result to this.
         data = ''
 
+        # We are increasing the length by one to include the null character
+        # at the end of the string.
+        if length > 0: 
+            length += 1
+
         while length > 0:
             # While we still want to read data.
 
@@ -286,7 +288,8 @@ class Socket(object):
             length -= len(buffer)
 
         if data:
-            return data
+            # Note that we are popping that last character. It should be a Null
+            return data[:-1]
         else:
             return None
 
@@ -385,7 +388,8 @@ class Socket(object):
         '''Read from the socket connection.'''
         return self._receive(self._receive_length())
 
-    def send(self, data, prefix_length=False, prefix_separator='\0'):
+    def send(self, data, prefix_length=False, prefix_separator='\0',
+             suffix=None):
         '''Send data to the server.
 
         :param data:
@@ -396,9 +400,15 @@ class Socket(object):
         :param prefix_separator:
             If prefix_length is True, this string will be placed between the
             length and the data.
+        :param suffix:
+            The ending character to use on the data. Note that this is
+            *not* included in the data length.
         '''
         if prefix_length:
             data = ''.join((str(len(data)), prefix_separator, data))
+        
+        if suffix is not None:
+            data += suffix
 
         self._socket.send(data)
 

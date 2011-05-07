@@ -37,7 +37,7 @@ dbgpcon_test = Tests()
 dbgpcon = None
 
 @dbgpcon_test.test
-def connect_to_pydbgp():
+def connect_pydbgp():
     '''Accept a pydbgp connection.'''
     global dbgpcon
 

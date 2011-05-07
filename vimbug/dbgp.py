@@ -52,6 +52,9 @@ class DBGPConnection:
         self._starter = starter
 
         
+        #: A simple connected value. Note that this may not always be up to
+        #: date. Do not trust what lies within!
+        self._connected = False
         #: A listener for incoming DBGp Server connections.
         self._listener = SocketListener()
         #: A simple integer which is increased with each send to the DBGp
@@ -63,6 +66,9 @@ class DBGPConnection:
         '''Start listening for an ide connection, and call this connections
         starter object, if any.
         '''
+        if self.connected():
+            raise NotImplementedError()
+
         # Start listening for connections.
         self._listener.listen(hostname=self._hostname, port=self._port)
         # Call the starter.
@@ -71,6 +77,19 @@ class DBGPConnection:
         self._listener.accept()
 
         self._connected = self._listener.connected()
+        #: The init packet from the DBGp Server. Written to after a
+        #: successful connection is made.
+        self._init_data = {}
+
+        # If we are connected, we should grab the init data and
+        # save it for this connection object.
+        if self._connected:
+            init_data = self.receive()
+            # Note that we are doing this so that we can simply keep
+            # the dict, rather than an lxml Element object.
+            for key in init_data.keys():
+                self._init_data[key] = init_data.get(key)
+            logger.debug('DBGp Connection Init Packet: %r' % self._init_data)
 
     def connected(self):
         '''Check whether or not a connection is active with this DBGPConnection

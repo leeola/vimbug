@@ -33,7 +33,7 @@ class DBGPConnection:
     '''
 
 
-    def __init__(self, starter, hostname='localhost', port=9000, ):
+    def __init__(self, starter, hostname='localhost', port=9000):
         '''
         :param starter:
             When a debug session is needed, this object is called *(as a
@@ -54,6 +54,9 @@ class DBGPConnection:
         
         #: A listener for incoming DBGp Server connections.
         self._listener = SocketListener()
+        #: A simple integer which is increased with each send to the DBGp
+        #: Server.
+        self._transaction_id_index = 0
    
     def connect(self):
        '''Start listening for an ide connection, and call this connections
@@ -107,7 +110,8 @@ class DBGPConnection:
         '''
         return self._listener.socket.receive()
 
-    def send(self, command, data=None, *args, **kwargs):
+    def send(self, command, data=None, transaction_id=None, args=None,
+             kwargs=None):
         '''Send a command to the DBGp Server.
 
         :param command:
@@ -115,15 +119,35 @@ class DBGPConnection:
         :param data:
             Any additional data to pass with the command. An example of this
             would be code for an expression.
-        :param *args:
-            All additional arguments will be appended to the command
+        :param transaction_id:
+            If supplied, this transaction_id is used. If None, the
+            DBGPConnection object's internal id's are used.
+        :param args:
+            A list of arguments which will each be given to the command
             string.
-        :param **kwargs:
-            All additional keyword arguments will be appended to the
+        :param kwargs:
+            A dict of kwargs which will each be appended to the
             command string in the format of '-key value'.
         '''
+        if args is None:
+            args = []
+        if kwargs is None:
+            kwargs = {}
+
         # Start by assigning the command to the command string.
         command_string = command
+
+        # If we need, generate our transaction_id
+        if transaction_id is None:
+            self._transaction_id_index += 1
+            transaction_id = self._transaction_id_index
+
+        # Now let's add a transaction id argument.
+        # Note that if the key already exists, this function is most likely
+        # being used wrong. But if the DBGp Server accepts whatever value -i
+        # currently is.. who cares?
+        if not kwargs.has_key('i'):
+            kwargs['i'] = transaction_id
 
         # Add each item in args to the command string.
         for arg in args:

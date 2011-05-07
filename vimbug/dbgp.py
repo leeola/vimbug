@@ -33,7 +33,7 @@ class DBGPConnection:
     '''
 
 
-    def __init__(self, starter, hostname='localhost', port=9000):
+    def __init__(self, starter, hostname='localhost', port=9000, ):
         '''
         :param starter:
             When a debug session is needed, this object is called *(as a
@@ -107,7 +107,7 @@ class DBGPConnection:
         '''
         return self._listener.socket.receive()
 
-    def send(self, command, data=None, **kwargs):
+    def send(self, command, data=None, *args, **kwargs):
         '''Send a command to the DBGp Server.
 
         :param command:
@@ -115,12 +115,20 @@ class DBGPConnection:
         :param data:
             Any additional data to pass with the command. An example of this
             would be code for an expression.
+        :param *args:
+            All additional arguments will be appended to the command
+            string.
         :param **kwargs:
             All additional keyword arguments will be appended to the
             command string in the format of '-key value'.
         '''
         # Start by assigning the command to the command string.
         command_string = command
+
+        # Add each item in args to the command string.
+        for arg in args:
+            command_string += ' %s' % arg
+
         # Now append each item to the command string.
         for key, value in kwargs.items():
             command_string = '%(orig_str)s -%(key)s %(value)s' % {
@@ -145,7 +153,6 @@ class DBGPConnection:
 
         # Lastly, log our send and send it!
         logger.debug('DBGPConnection Send: %s' % command_string)
-        print 'Sending.. %s' % command_string
         self._listener.socket.send(command_string)
 
 

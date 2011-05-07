@@ -68,7 +68,7 @@ def echo_data(client, listener):
     ]
 
     for data in datas:
-        client.send(data)
+        client.send(data, prefix_length=True)
         assert listener.socket.receive() == data
 
 @socktest.test

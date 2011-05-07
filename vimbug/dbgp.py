@@ -378,7 +378,7 @@ class Socket(object):
             length and the data.
         '''
         if prefix_length:
-            data = ''.join((len(data), prefix_separator, data))
+            data = ''.join((str(len(data)), prefix_separator, data))
 
         self._socket.send(data)
 

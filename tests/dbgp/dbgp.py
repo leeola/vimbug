@@ -1,7 +1,7 @@
 # coding: utf-8
 '''
-    tests.dbgp.dbgpconnection
-    ~~~~~~~~~~~~~~~~~~~~~~~~~
+    tests.dbgp.dbgp
+    ~~~~~~~~~~~~~~~
 
     :copyright: (c) 2011 by Lee Olayvar
     :license: MIT, see LICENSE for more details.

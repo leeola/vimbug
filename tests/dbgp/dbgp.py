@@ -41,11 +41,51 @@ dbgp = DBGP(
     ),
 )
 
-def hello_world():
+@dbgp_test.test
+def hello_world_copy():
     '''Run our hello world file.'''
     global dbgp
 
     dbgp.set_debug('hello_world.py', relative=True)
     dbgp.connect_debug()
+    dbgp.stdout(output='copy')
     dbgp.run()
+    
+    data = dbgp.read(
+        continuous=True, return_copy=True, call_subscribers=False)
+
+    assert data[1]['type'] == 'stdout'
+    assert data[1]['encoding'] == 'base64'
+    assert data[1]['value'] == 'SGVsbG8gV29ybGQ='
+
+    # Don't forget to end our debug session.
+    dbgp.disconnect_debug(stop=True)
+
+@dbgp_test.test
+def hello_world_subscribers():
+    '''Run our hello world file.'''
+    global dbgp
+
+    dbgp.set_debug('hello_world.py', relative=True)
+    dbgp.connect_debug()
+    dbgp.stdout(output='copy')
+    dbgp.run()
+
+    subscribed_data = []
+    def subscribed_to_stream(type, encoding, data):
+        subscribed_data.append((type, encoding, data))
+
+    dbgp.subscribe_stream(subscribed_to_stream)
+    
+    return_data = dbgp.read(
+        continuous=True, return_copy=False, call_subscribers=True)
+
+    assert return_data is None
+
+    assert data[0]['type'] == 'stdout'
+    assert data[0]['encoding'] == 'base64'
+    assert data[0]['value'] == 'SGVsbG8gV29ybGQ='
+
+    # Don't forget to end our debug session.
+    dbgp.disconnect_debug(stop=True)
 

@@ -62,7 +62,7 @@ class DBGP:
             self._relative_uri = os.path.abspath('.')
 
         #: The DBGPConnection object.
-        self._dbgpconnection = None
+        self._dbgpcon = None
         #: The debug uri we want to debug.
         self._debug_uri = None
 
@@ -75,18 +75,19 @@ class DBGP:
         if self.connection_exists():
             raise NotImplementedError()
 
-        self._dbgpconnection = DBGPConnection(
+        self._dbgpcon = DBGPConnection(
             self._debug_uri,
             host=self._host,
             port=self._port,
             starter=self._starter,
         )
+        self._dbgpcon.connect()
 
     def connection_exists(self):
         '''Whether or not we have an existing DBGPConnection object. If we do,
         we either have an active DBGp Session, or we intend to.
         '''
-        return self._dbgpconnection is not None
+        return self._dbgpcon is not None
 
     def connected(self):
         '''Whether or not we have an established, live DBGPConnection object.
@@ -94,7 +95,7 @@ class DBGP:
         if self._dbgpconnection is None:
             return False
         else:
-            return self._dbgpconnection.connected()
+            return self._dbgpcon.connected()
     
     def set_debug(self, uri, relative=False):
         '''Set the debug file to use.
@@ -119,7 +120,63 @@ class DBGP:
 
     def run(self):
         '''the dbgp run command.'''
+        self._dbgpcon.send('run')
+
+    def read(self, continuous=True, return_copy=False, call_subscribers=True):
+        '''Read the response/stream/etc(s) from the DBGPConnection, if any.
+
+        :param continuous:
+            Read data from the server until the returning transaction
+            ids match all the transaction ids we sent.
+
+            Note that if the run command was used, this could be a lot of data
+            and could block this thread for a good amount of time. A timeout
+            will be added in the future.
+        :param return_copy:
+            After all of the data has been gained from the DBGPConnection that
+            we can get, return a copy of the dictionary generated. This is
+            the same one which will be processed for subscribers.
+
+            An empty list is returned if no data was returned.
+        :param call_subscribers:
+            Send the data gathered from the `DBGPConnection` to be processed
+            and call each subscriber that matches the data types gained.
+
+            For further information on subscribers, see `self.subscribe()`.
+        '''
         pass
+
+    def stderr(self, output='copy'):
+        '''The dbgp stderr command.
+
+        :param output:
+            Valid choices:
+                - disable
+                - copy
+                - redirect
+        '''
+        options = {
+            'disable':0,
+            'copy':1,
+            'redirect':2,
+        }
+        self._dbgpcon.send('stderr', kwargs={'c':options[output]})
+
+    def stdout(self, output='copy'):
+        '''The dbgp stdout command.
+
+        :param output:
+            Valid choices:
+                - disable
+                - copy
+                - redirect
+        '''
+        options = {
+            'disable':0,
+            'copy':1,
+            'redirect':2,
+        }
+        self._dbgpcon.send('stdout', kwargs={'c':options[output]})
 
 
 class DBGPConnection:

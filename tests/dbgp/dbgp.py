@@ -43,7 +43,7 @@ dbgp = DBGP(
 
 @dbgp_test.test
 def hello_world_copy():
-    '''Run our hello world file.'''
+    '''Run our hello world file and test the copy stream returned.'''
     global dbgp
 
     dbgp.set_debug('hello_world.py', relative=True)
@@ -63,7 +63,7 @@ def hello_world_copy():
 
 @dbgp_test.test
 def hello_world_subscribers():
-    '''Run our hello world file.'''
+    '''Run our hello world file and test our subscribers to the stream.'''
     global dbgp
 
     dbgp.set_debug('hello_world.py', relative=True)

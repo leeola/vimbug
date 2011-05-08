@@ -1,7 +1,7 @@
 # coding: utf-8
 '''
-    tests.dbgp.dbgpconnection
-    ~~~~~~~~~~~~~~~~~~~~~~~~~
+    tests.dbgp.dbgp
+    ~~~~~~~~~~~~~~~
 
     :copyright: (c) 2011 by Lee Olayvar
     :license: MIT, see LICENSE for more details.
@@ -43,7 +43,7 @@ dbgp = DBGP(
 
 @dbgp_test.test
 def hello_world_copy():
-    '''Run our hello world file.'''
+    '''Run our hello world file and test the copy stream returned.'''
     global dbgp
 
     dbgp.set_debug('hello_world.py', relative=True)
@@ -57,13 +57,14 @@ def hello_world_copy():
     assert data[1]['type'] == 'stdout'
     assert data[1]['encoding'] == 'base64'
     assert data[1]['value'] == 'SGVsbG8gV29ybGQ='
+    assert data[1]['decoded'] == 'Hello World'
 
     # Don't forget to end our debug session.
     dbgp.disconnect_debug(stop=True)
 
 @dbgp_test.test
 def hello_world_subscribers():
-    '''Run our hello world file.'''
+    '''Run our hello world file and test our subscribers to the stream.'''
     global dbgp
 
     dbgp.set_debug('hello_world.py', relative=True)
@@ -72,9 +73,19 @@ def hello_world_subscribers():
     dbgp.run()
 
     subscribed_data = []
-    def subscribed_to_stream(type, encoding, data):
-        subscribed_data.append((type, encoding, data))
+    def subscribed_to_response(command, **kwargs):
+        kwargs['command'] = command
+        subscribed_data.append(kwargs)
 
+    def subscribed_to_stream(type, encoding, data):
+        subscribed_data.append({
+            'type':type,
+            'encoding':encoding,
+            'data':data
+        })
+
+    dbgp.subscribe_response(
+        subscribed_to_response, command='all')
     dbgp.subscribe_stream(subscribed_to_stream)
     
     return_data = dbgp.read(
@@ -82,9 +93,20 @@ def hello_world_subscribers():
 
     assert return_data is None
 
-    assert data[0]['type'] == 'stdout'
-    assert data[0]['encoding'] == 'base64'
-    assert data[0]['value'] == 'SGVsbG8gV29ybGQ='
+    # The first command response
+    assert data[0]['command'] == 'stdout'
+    assert data[0]['success'] == True
+    assert data[0]['transaction_id'] == 1
+    # The first stream response
+    assert data[1]['type'] == 'stdout'
+    assert data[1]['encoding'] == 'base64'
+    assert data[1]['value'] == 'SGVsbG8gV29ybGQ='
+    assert data[1]['decoded'] == 'Hello World'
+    # The second (and last) command response
+    assert data[3]['command'] == 'run'
+    assert data[3]['status'] == 'stopping'
+    assert data[3]['transaction_id'] == 2
+
 
     # Don't forget to end our debug session.
     dbgp.disconnect_debug(stop=True)
